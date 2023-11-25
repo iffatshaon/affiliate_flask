@@ -9,9 +9,9 @@ user = Blueprint("user_blueprint",__name__)
 def register():
     return model.register_model(request.get_json())
 
-@user.route("/login")
+@user.route("/login", method=["POST"])
 def login():
-    return "Hello login"
+    return model.login_model(request.get_json())
 
 @user.route("/all")
 def users():

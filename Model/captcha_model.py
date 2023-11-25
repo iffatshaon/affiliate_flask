@@ -1,6 +1,5 @@
-import json
 from Utils.database import cursor
-from flask import make_response, jsonify, send_file
+from flask import make_response, send_file
 import string
 from io import BytesIO
 from captcha.image import ImageCaptcha
@@ -33,4 +32,4 @@ class captcha_model:
                 if x.text == data.text:
                     return make_response({"result":True})
             return make_response({"result":False})
-        return make_response({"result":"No hash"},204)
+        return make_response({"result":False},204)

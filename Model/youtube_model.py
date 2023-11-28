@@ -1,7 +1,7 @@
 from Utils.database import cursor
 from flask import make_response, send_file
 
-class article_model:
+class youtube_model:
     def __init__(self):
         self.cur = cursor
     

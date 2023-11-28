@@ -9,10 +9,10 @@ price = Blueprint("price_blueprint",__name__)
 def get():
     return model.getall_model()
 
-@price.route("/update", method=["POST"])
+@price.route("/update", methods=["POST"])
 def update():
     return model.update_model(request.get_json())
 
-@price.route("/add", method=["POST"])
+@price.route("/add", methods=["POST"])
 def add():
     return model.add_model(request.get_json())

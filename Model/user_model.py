@@ -1,6 +1,6 @@
 from Utils.database import cursor
 from flask import make_response
-from captcha_model import captcha_model
+from Model.captcha_model import captcha_model
 
 captcha = captcha_model()
 

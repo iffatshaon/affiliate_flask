@@ -15,5 +15,5 @@ class article_model:
     def free_model(self,data):
         return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
     
-    def suggestion(self,data):
+    def suggestion_model(self,data):
         return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")

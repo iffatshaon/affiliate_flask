@@ -9,10 +9,10 @@ review = Blueprint("review_blueprint",__name__)
 def get():
     return model.getall_model()
 
-@review.route("/update", method=["POST"])
+@review.route("/update", methods=["POST"])
 def update():
     return model.update_model(request.get_json())
 
-@review.route("/create", method=["POST"])
+@review.route("/create", methods=["POST"])
 def create():
     return model.create_model(request.get_json())

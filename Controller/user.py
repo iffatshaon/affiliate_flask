@@ -9,7 +9,7 @@ user = Blueprint("user_blueprint",__name__)
 def register():
     return model.register_model(request.get_json())
 
-@user.route("/login", method=["POST"])
+@user.route("/login", methods=["POST"])
 def login():
     return model.login_model(request.get_json())
 

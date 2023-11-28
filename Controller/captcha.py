@@ -9,6 +9,6 @@ captcha = Blueprint("captcha_blueprint",__name__)
 def new():
     return model.new_model()
 
-@captcha.route("/match")
+@captcha.route("/match", methods=['POST'])
 def match():
-    return model.match_model()
+    return model.match_model(request.json())

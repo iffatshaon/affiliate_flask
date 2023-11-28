@@ -9,7 +9,7 @@ class price_model:
         return make_response({"result":"Incomplete API"})
 
     def update_model(self,data):
-        returnmake_response({"result":"Incomplete API"})
+        return make_response({"result":"Incomplete API"})
     
     def add_model(self,data):
         return make_response({"result":"Incomplete API"})

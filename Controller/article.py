@@ -3,16 +3,16 @@ from Model.article_model import article_model
 
 model = article_model()
 
-article = Blueprint("captcha_blueprint",__name__)
+article = Blueprint("article_blueprint",__name__)
 
-@article.route("/create", method=["POST"])
+@article.route("/create", methods=["POST"])
 def create():
     return model.create_model(request.get_json())
 
-@article.route("/create-free", method=["POST"])
+@article.route("/create-free", methods=["POST"])
 def createfree():
     return model.free_model(request.get_json())
 
-@article.route("/suggestion", method=["POST"])
-def createfree():
-    return model.suggestion(request.get_json())
+@article.route("/suggestion", methods=["POST"])
+def suggestion():
+    return model.suggestion_model(request.get_json())

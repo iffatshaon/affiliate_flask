@@ -6,13 +6,13 @@ class article_model:
         self.cur = cursor
     
     def getall_model(self):
-        return "cookie text"
+        return make_response({"result":"Incomplete API"})
     
     def get_model(self,data):
-        return "cookie text"
+        return make_response({"result":"Incomplete API"})
 
     def set_model(self,data):
-        return make_response(send_file("text_file_path",mimetype="txt"))
+        return make_response({"result":"Incomplete API"})
     
     def add_model(self,data):
-        return make_response(send_file("text_file_path",mimetype="txt"))
+        return make_response({"result":"Incomplete API"})

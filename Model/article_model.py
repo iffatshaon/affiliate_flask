@@ -10,8 +10,10 @@ class article_model:
 
     def create_model(self):
         cookie = self.generate_cookie()
-        return make_response(send_file("text_file_path",mimetype="txt"))
+        return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
-        return make_response(send_file("text_file_path",mimetype="txt"))
-        # return make_response({"result":"No hash"},204)
+        return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
+    
+    def suggestion(self,data):
+        return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")

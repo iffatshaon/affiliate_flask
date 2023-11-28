@@ -12,3 +12,7 @@ def create():
 @article.route("/create-free", method=["POST"])
 def createfree():
     return model.free_model(request.get_json())
+
+@article.route("/suggestion", method=["POST"])
+def createfree():
+    return model.suggestion(request.get_json())

@@ -16,11 +16,11 @@ class youtube_model:
         return make_response({"result":result})
 
     def set_model(self,data):
-        try:
-            self.cur.execute(f"UPDATE videos url='{data['url']}' WHERE id='{data['id']}' ")
-            return make_response({"result":data},201)
-        except:
-            return make_response({"result":"Unable to Update"},204)
+        self.cur.execute(f"UPDATE videos SET url='{data['url']}' WHERE id={data['id']}")
+        return make_response({"result":data},201)
+        # try:
+        # except:
+        #     return make_response({"result":"Unable to Update"},204)
     
     def add_model(self,data):
         try:

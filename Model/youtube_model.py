@@ -6,13 +6,25 @@ class youtube_model:
         self.cur = cursor
     
     def getall_model(self):
-        return make_response({"result":"Incomplete API"})
+        self.cur.execute(f"SELECT * FROM videos")
+        result = self.cur.fetchall()
+        return make_response({"result":result})
     
-    def get_model(self,data):
-        return make_response({"result":"Incomplete API"})
+    def get_model(self,vid):
+        self.cur.execute(f"SELECT url FROM videos WHERE id={vid}")
+        result = self.cur.fetchall()
+        return make_response({"result":result})
 
     def set_model(self,data):
-        return make_response({"result":"Incomplete API"})
+        try:
+            self.cur.execute(f"UPDATE videos url='{data['url']}' WHERE id='{data['id']}' ")
+            return make_response({"result":data},201)
+        except:
+            return make_response({"result":"Unable to Update"},204)
     
     def add_model(self,data):
-        return make_response({"result":"Incomplete API"})
+        try:
+            self.cur.execute(f"INSERT INTO videos(url) VALUES('{data['url']}')")
+            return make_response({"result":data},201)
+        except:
+            return make_response({"result":"Unable to Add"},204)

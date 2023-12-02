@@ -5,13 +5,17 @@ model = youtube_model()
 
 youtube = Blueprint("youtube_blueprint",__name__)
 
-@youtube.route("/get")
+@youtube.route("/getall")
 def getall():
     return model.getall_model()
 
-@youtube.route("/get/<id>")
-def getVideo(id):
-    return model.get_model(id)
+@youtube.route("/get/<vid>")
+def getVideo(vid):
+    return model.get_model(int(vid))
+
+@youtube.route("/get/")
+def getFirstVideo():
+    return model.get_model(1)
 
 @youtube.route("/set", methods=["POST"])
 def setVideo():

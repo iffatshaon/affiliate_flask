@@ -26,11 +26,12 @@ class captcha_model:
         return Response(captcha_image.read(), mimetype=mimetype, headers=headers)
     
     def match_model(self,data):
-        self.cur.execute(f"SELECT * FROM captcha WHERE hash='{data.hash}'")
+        print(data)
+        self.cur.execute(f"SELECT * FROM captcha WHERE hash='{data['hash']}'")
         result = self.cur.fetchall()
         if len(result)>0:
             for x in result:
-                if x.text == data.text:
+                if x["text"] == data["text"]:
                     return make_response({"result":True})
             return make_response({"result":False})
         return make_response({"result":False},204)

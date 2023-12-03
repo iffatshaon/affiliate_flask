@@ -11,4 +11,4 @@ def new():
 
 @captcha.route("/match", methods=['POST'])
 def match():
-    return model.match_model(request.json())
+    return model.match_model(request.get_json())

@@ -1,6 +1,8 @@
 from Utils.database import cursor,connection
 from flask import make_response
 from Model.captcha_model import captcha_model
+from datetime import datetime
+import bcrypt
 
 captcha = captcha_model()
 
@@ -10,15 +12,20 @@ class user_model():
         self.cur = cursor
         
     def encrypt(self,password):
-        return "encrypted"
+        # password = password.encode()
+        # hashed = bcrypt.hashpw(password, bcrypt.gensalt(12))
+        # return str(hashed.decode('utf-8'))
+        return password
 
     def register_model(self,data):
         self.con.reconnect()
-        getMatch = captcha.match_model({"hash":data.hash,"text":data.text})
-        if getMatch.result:
-            password = self.encrypt(data.password)
+        # getMatch = captcha.match_model({"hash":data['hash'],"text":data['text']})
+        getMatch = {'result':True}
+        if getMatch['result']:
+            password = self.encrypt(data['password'])
+            print(password)
             try:
-                self.cur.execute(f"INSERT INTO users(firstName,lastName,username,email,password) VALUES('{data['firstName']}','{data['lastName']}','{data['userName']}','{data['email']}','{password}')")
+                self.cur.execute(f"INSERT INTO users(firstName,lastName,username,email,password) VALUES('{data['firstName']}','{data['lastName']}','{data['username']}','{data['email']}','{password}')")
                 return make_response({"result":data},201)
             except:
                 return make_response({"result":"Unable to Register"},204)
@@ -51,18 +58,15 @@ class user_model():
     
     def login_model(self,data):
         self.con.reconnect()
-        getMatch = captcha.match_model({"hash":data.hash,"text":data.text})
-        if getMatch.result:
-            self.cur.execute(f"SELECT password FROM users WHERE email='{data.email}'")
+        # getMatch = captcha.match_model({"hash":data['hash'],"text":data['text']})
+        getMatch = {'result':True}
+        if getMatch['result']:
+            self.cur.execute(f"SELECT * FROM users WHERE username='{data['username']}' and password='{self.encrypt(data['password'])}'")
             result = self.cur.fetchall()
             if len(result)>0:
-                passenc = self.encrypt(data.password)
-                if passenc == result.password:
-                    return make_response({"result":True})
-                else:
-                    return make_response({"result":"Unable to login"})
+                return make_response({"result":True})
             else:
-                return make_response({"result":"User not found"})
+                return make_response({"result":False})
         else:
             return make_response({"result":"Invalid captcha"})
         

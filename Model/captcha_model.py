@@ -1,4 +1,4 @@
-from Utils.database import cursor
+from Utils.database import cursor, connection
 from flask import make_response, send_file, Response
 import string
 from io import BytesIO,StringIO
@@ -8,9 +8,11 @@ import uuid
 
 class captcha_model:
     def __init__(self):
+        self.con = connection
         self.cur = cursor
     
     def new_model(self):
+        self.con.reconnect()
         captcha_length = 5
         captcha_characters = string.ascii_letters + string.digits
         captcha_text = ''.join(random.choice(captcha_characters) for _ in range(captcha_length))
@@ -26,7 +28,7 @@ class captcha_model:
         return Response(captcha_image.read(), mimetype=mimetype, headers=headers)
     
     def match_model(self,data):
-        print(data)
+        self.con.reconnect()
         self.cur.execute(f"SELECT * FROM captcha WHERE hash='{data['hash']}'")
         result = self.cur.fetchall()
         if len(result)>0:

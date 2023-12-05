@@ -1,4 +1,4 @@
-from Utils.database import cursor
+from Utils.database import cursor,connection
 from flask import make_response
 from Model.captcha_model import captcha_model
 
@@ -6,12 +6,14 @@ captcha = captcha_model()
 
 class user_model():
     def __init__(self):
+        self.con = connection
         self.cur = cursor
         
     def encrypt(self,password):
         return "encrypted"
 
     def register_model(self,data):
+        self.con.reconnect()
         getMatch = captcha.match_model({"hash":data.hash,"text":data.text})
         if getMatch.result:
             password = self.encrypt(data.password)
@@ -24,6 +26,7 @@ class user_model():
             return make_response({"result":"Invalid captcha"})
     
     def getusers_model(self):
+        self.con.reconnect()
         self.cur.execute("SELECT * FROM users")
         result = self.cur.fetchall()
         if len(result)>0:
@@ -33,6 +36,7 @@ class user_model():
 
     
     def updateUser_model(self,data):
+        self.con.reconnect()
         sql = "UPDATE users SET"
         for x in data:
             if x != "id":
@@ -46,6 +50,7 @@ class user_model():
             return make_response({"result":"Nothing to update"},204)
     
     def login_model(self,data):
+        self.con.reconnect()
         getMatch = captcha.match_model({"hash":data.hash,"text":data.text})
         if getMatch.result:
             self.cur.execute(f"SELECT password FROM users WHERE email='{data.email}'")

@@ -1,8 +1,9 @@
-from Utils.database import cursor
+from Utils.database import cursor, connection
 from flask import make_response, send_file
 
 class review_model:
     def __init__(self):
+        self.con = connection
         self.cur = cursor
     
     def getall_model(self):

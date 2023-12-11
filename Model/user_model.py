@@ -23,9 +23,8 @@ class user_model():
         getMatch = {'result':True}
         if getMatch['result']:
             password = self.encrypt(data['password'])
-            print(password)
             try:
-                self.cur.execute(f"INSERT INTO users(firstName,lastName,username,email,password) VALUES('{data['firstName']}','{data['lastName']}','{data['username']}','{data['email']}','{password}')")
+                self.cur.execute(f"INSERT INTO users(name,mobile,username,email,password) VALUES('{data['name']}','{data['mobile']}','{data['username']}','{data['email']}','{password}')")
                 return make_response({"result":data},201)
             except:
                 return make_response({"result":"Unable to Register"},204)

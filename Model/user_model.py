@@ -23,13 +23,17 @@ class user_model():
         getMatch = {'result':True}
         if getMatch['result']:
             password = self.encrypt(data['password'])
-            try:
-                self.cur.execute(f"INSERT INTO users(name,mobile,username,email,password) VALUES('{data['name']}','{data['mobile']}','{data['username']}','{data['email']}','{password}')")
-                return make_response({"result":data},201)
-            except:
-                return make_response({"result":"Unable to Register"},204)
+            res = self.cur.execute(f"SELECT * FROM users where email='{data['email']}' OR mobile='{data['mobile']}'")
+            if(len(res)>0):
+                return make_response({"result":"Email and/or Mobile number has already been used"},409)
+            else:
+                try:
+                    self.cur.execute(f"INSERT INTO users(name,mobile,username,email,password) VALUES('{data['name']}','{data['mobile']}','{data['username']}','{data['email']}','{password}')")
+                    return make_response({"result":data},201)
+                except:
+                    return make_response({"result":"Unable to Register"},204)
         else:
-            return make_response({"result":"Invalid captcha"})
+            return make_response({"result":"Invalid captcha"},204)
     
     def getusers_model(self):
         self.con.reconnect()

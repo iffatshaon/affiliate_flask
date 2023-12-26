@@ -9,7 +9,7 @@ article = Blueprint("article_blueprint",__name__)
 def create():
     return model.create_model(request.get_json())
 
-@article.route("/create-free", methods=["POST"])
+@article.route("/createfree", methods=["POST"])
 def createfree():
     return model.free_model(request.get_json())
 

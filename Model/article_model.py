@@ -4,6 +4,9 @@ import asyncio
 from sydney import SydneyClient
 import os
 from openai import OpenAI
+from bs4 import BeautifulSoup
+import requests
+import urllib.parse
 
 
 class article_model:
@@ -16,7 +19,7 @@ class article_model:
     async def getAnswer(e) -> None:
         print(e)
         async with SydneyClient() as sydney:
-            prompt = "Write an article using the keywords - money, seo, unknown. A blogger site, type - tech, label - tech. Number of subheadings - random. Number of FAQs - random. Place minimum 3 image placeholders in places where images can be inserted, also provide an appropriate image anchor in all the placeholders. Should be plagiarism free. Only keep the article in your answer. Dont write labels for heading or subheading."
+            prompt = "Write an HTML code of an article using the keywords - money, seo, unknown. A blogger site, type - tech, label - tech. Number of subheadings - random. Number of FAQs - random. Place minimum 3 image placeholders in places where images can be inserted, also provide an appropriate image anchor in all the placeholders. Should be plagiarism free. Only keep the article in your answer. Dont write labels for heading or subheading. "
 
             print("Sydney: ", end="", flush=True)
             async for response in sydney.ask_stream(prompt):
@@ -26,10 +29,29 @@ class article_model:
     def generate_cookie():
         return "cookie text"
 
+    def getImagePixabay(self,imageInfo):
+        api_url = f"https://pixabay.com/api/?key={os.getenv('PIXABAY_KEY')}&q={urllib.parse.quote_plus(imageInfo)}&image_type=photo&safesearch=true&per_page=4"
+        response = requests.get(api_url)
+        # print(response.json()["hits"][0]["largeImageURL"])
+        return response.json()["hits"][0]["largeImageURL"]
+
+    def getImagePexels(self,imageInfo):
+        url = "https://api.pexels.com/v1/search"
+        headers = {
+            "Authorization": os.getenv('PEXELS_KEY')
+        }
+        params = {
+            "query": imageInfo,
+            "per_page": 4
+        }
+        response = requests.get(url, headers=headers, params=params)
+        return response.json()["photos"][0]["src"]["original"]
+
     def create_model(self,data):
-        message = f"Write an article using the keywords - {data['keywords']}. A {data['site']} site, type - {data['type']}, label - {data['label']}. Number of subheadings - {data['subheading']}. Number of FAQs - {data['faq']}. Place minimum {data['imageCount']} image placeholders in places where images can be inserted, also provide an appropriate image anchor in all the placeholders. Should be plagiarism free. Only keep the article in your answer. Dont write labels for heading or subheading."
+        message = f"Write an HTML code of an article using the keywords - {data['keywords']}. A {data['site']} site, type - {data['type']}, label - {data['label']}. Number of subheadings - {data['subheading']}. Number of FAQs with answers - {data['faq']}. Place minimum {data['imageCount']} image placeholders in places where images can be inserted, provide an appropriate image label in all the placeholders as alt. Center the Title and images using css styles. Images max width should be document width. Better to keep a video, carousel or image after title. Should be plagiarism free, each time generating new. Only keep the article in your answer. Dont write labels for heading or subheading. Provide a complete blog article."
+        print("The message:",message)
         messages = [ {"role": "system", "content":
-              "You are a content writer."} ]
+              "You are a web developer"} ]
         messages.append(
             {"role": "user", "content": message},
         ) 
@@ -38,7 +60,17 @@ class article_model:
             messages=messages
         )
         reply = chat.choices[0].message.content
-        return make_response({"result":reply}) #send_file("text_file_path",mimetype="txt")
+        soup = BeautifulSoup(reply)
+        soup.body.append(soup.head.style)
+        img_tags = soup.find_all('img')
+        for img in img_tags:
+            alt_value = img.get('alt', '')
+            try:
+                resultImage = self.getImagePixabay(alt_value)
+                img['src'] = resultImage
+            except:
+                print("Could not find image for:",alt_value)
+        return make_response({"result":str(soup.body)}) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
         # self.con.reconnect()
@@ -47,5 +79,26 @@ class article_model:
         return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
     
     def suggestion_model(self,data):
-        self.con.reconnect()
+        # self.con.reconnect()
+        # url = "https://www.helpscout.com/blog/"
+        # req = requests.get(url)
+        # soup = BeautifulSoup(req.content, 'html.parser')
+        # img_tags = soup.find_all('img')
+        # print(len(img_tags))
+        # print(soup.head.style)
+        # soup.body.append(soup.head.style)
+        # url = "https://api.pexels.com/v1/search"
+        # headers = {
+        #     "Authorization": "thcOL8fAtOCFvyXYov7V6m1QbJn3IulEw1AUnStTPNiYy5rdpzvaCPfF"
+        # }
+        # params = {
+        #     "query": "nature in ice",
+        #     "per_page": 1
+        # }
+        # response = requests.get(url, headers=headers, params=params)
+        # print(response.json()["photos"][0]["src"]["original"])
+        # api_url = f"https://pixabay.com/api/?key={os.getenv('PIXABAY_KEY')}&q=yellow+flowers&image_type=photo&safesearch=true&per_page=4"
+        # response = requests.get(api_url)
+        # print(response.json()["hits"])
+        # self.getImagePixabay("Yellow flower")
         return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")

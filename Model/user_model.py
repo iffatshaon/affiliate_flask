@@ -68,7 +68,7 @@ class user_model():
             self.cur.execute(f"SELECT * FROM users WHERE username='{data['username']}' and password='{self.encrypt(data['password'])}'")
             result = self.cur.fetchall()
             if len(result)>0:
-                return make_response({"result":True})
+                return make_response({"result":True, "name":result[0]['name'],"email":result[0]["email"]})
             else:
                 return make_response({"result":False})
         else:

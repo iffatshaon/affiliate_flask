@@ -23,7 +23,8 @@ class user_model():
         getMatch = {'result':True}
         if getMatch['result']:
             password = self.encrypt(data['password'])
-            res = self.cur.execute(f"SELECT * FROM users where email='{data['email']}' OR mobile='{data['mobile']}'")
+            self.cur.execute(f"SELECT * FROM users where email='{data['email']}' OR mobile='{data['mobile']}'")
+            res = self.cur.fetchall()
             if(len(res)>0):
                 return make_response({"result":"Email and/or Mobile number has already been used"},409)
             else:

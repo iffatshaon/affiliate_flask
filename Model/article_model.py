@@ -87,8 +87,10 @@ class article_model:
         return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
 
     def get_list_model(self,data):
-
-        return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
+        self.con.reconnect()
+        self.cur.execute("SELECT * FROM article where user=%s",(data['auth']))
+        result = self.cur.fetchall()
+        return make_response({"result":result})
     
     def suggestion_model(self,data):
         file_path = 'articles/output.txt'

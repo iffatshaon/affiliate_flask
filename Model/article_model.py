@@ -63,7 +63,10 @@ class article_model:
         )
         reply = chat.choices[0].message.content
         soup = BeautifulSoup(reply, features="html.parser")
-        soup.body.append(soup.head.style)
+        try:
+            soup.body.append(soup.head.style)
+        except:
+            pass
         img_tags = soup.find_all('img')
         for img in img_tags:
             alt_value = img.get('alt', '')
@@ -88,7 +91,7 @@ class article_model:
 
     def get_list_model(self,data):
         self.con.reconnect()
-        self.cur.execute("SELECT * FROM article where user=%s",(data['auth']))
+        self.cur.execute("SELECT * FROM article WHERE user=%s",[data['auth']])
         result = self.cur.fetchall()
         return make_response({"result":result})
     

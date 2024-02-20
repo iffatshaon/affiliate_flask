@@ -7,6 +7,7 @@ from openai import OpenAI
 from bs4 import BeautifulSoup
 import requests
 import urllib.parse
+from datetime import datetime
 
 
 class article_model:
@@ -48,6 +49,7 @@ class article_model:
         return response.json()["photos"][0]["src"]["original"]
 
     def create_model(self,data):
+        self.con.reconnect()
         message = f"Write an HTML code of an article using the keywords - {data['keywords']}. A {data['site']} site, type - {data['type']}, label - {data['label']}. Number of subheadings - {data['subheading']}. Number of FAQs with answers - {data['faq']}. Place minimum {data['imageCount']} image placeholders in places where images can be inserted, provide an appropriate image label in all the placeholders as alt. Center the Title and images using css styles. Images max width should be document width. Better to keep a video, carousel or image after title. Should be plagiarism free, each time generating new. Only keep the article in your answer. Dont write labels for heading or subheading. Provide a complete blog article."
         print("The message:",message)
         messages = [ {"role": "system", "content":
@@ -60,7 +62,7 @@ class article_model:
             messages=messages
         )
         reply = chat.choices[0].message.content
-        soup = BeautifulSoup(reply)
+        soup = BeautifulSoup(reply, features="html.parser")
         soup.body.append(soup.head.style)
         img_tags = soup.find_all('img')
         for img in img_tags:
@@ -70,6 +72,12 @@ class article_model:
                 img['src'] = resultImage
             except:
                 print("Could not find image for:",alt_value)
+        title = str(soup.body.find("h1").text)
+        file_name = datetime.now().strftime("%y%m%d%H%M%S")
+        file_path = 'articles/'+file_name+'.txt'
+        with open(file_path, 'w') as file:
+            file.write(str(soup.body))
+        self.cur.execute("INSERT INTO article (user, title, link) VALUES (%s, %s, %s)",(data['auth'], title, file_path))
         return make_response({"result":str(soup.body)}) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
@@ -77,8 +85,15 @@ class article_model:
         # print("Hello all")
         asyncio.run(self.getAnswer())
         return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
+
+    def get_list_model(self,data):
+
+        return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
     
     def suggestion_model(self,data):
+        file_path = 'articles/output.txt'
+        with open(file_path, 'r') as file:
+            file.read()
         # self.con.reconnect()
         # url = "https://www.helpscout.com/blog/"
         # req = requests.get(url)

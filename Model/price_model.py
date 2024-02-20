@@ -1,5 +1,6 @@
 from Utils.database import cursor,connection
 from flask import make_response, send_file
+import mysql.connector
 
 class price_model:
     def __init__(self):
@@ -22,8 +23,15 @@ class price_model:
     
     def add_model(self,data):
         self.con.reconnect()
+        # Generate column names and placeholders
+        columns = ', '.join(data.keys())
+        placeholders = ', '.join(['%s'] * len(data))
+        query = f"INSERT INTO price ({columns}) VALUES ({placeholders})"
         try:
-            self.cur.execute(f"INSERT INTO price(plan,description,price) VALUES('{data['plan']}','{data['description']}','{data['price']}')")
-            return make_response({"result":data},201)
-        except:
-            return make_response({"result":"Unable to Add"},204)
+            # Execute the query using the values from `data`
+            self.cur.execute(query, tuple(data.values()))
+            self.con.commit()  # Make sure to commit the changes
+            return make_response({"result": data}, 201)
+        except mysql.connector.Error as err:
+            print("Error:", err)
+            return make_response({"result": "Unable to Add"}, 204)

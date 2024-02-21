@@ -15,11 +15,20 @@ class price_model:
 
     def update_model(self,data):
         self.con.reconnect()
+        if 'id' not in data:
+            return make_response({"result": "Missing 'id'"}, 400)
+        
+        assignments = ', '.join([f"{key} = %s" for key in data if key != 'id'])
+        data_values = tuple(data[key] for key in data if key != 'id')
+        conditions = (data['id'],)
+        sql_query = f"UPDATE price SET {assignments} WHERE id = %s"
         try:
-            self.cur.execute(f"UPDATE price plan='{data['plan']}', description='{data['description']}', price='{data['price']}' WHERE id='{data['id']}' ")
-            return make_response({"result":data},201)
-        except:
-            return make_response({"result":"Unable to Update"},204)
+            self.cur.execute(sql_query, data_values + conditions)
+            self.con.commit()
+            return make_response({"result": data}, 201)
+        except mysql.connector.Error as err:
+            print("Error:", err)
+            return make_response({"result": "Unable to Update"}, 204)
     
     def add_model(self,data):
         self.con.reconnect()

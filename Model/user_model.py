@@ -44,7 +44,15 @@ class user_model():
             return make_response({"result":result})
         else:
             return make_response({"result":"No data"},204)
-
+    
+    def remainingtoken_model(self,data):
+        self.con.reconnect()
+        self.cur.execute("SELECT token FROM users where id=%s",[data["auth"]])
+        result = self.cur.fetchall()
+        if len(result)>0:
+            return make_response({"result":result})
+        else:
+            return make_response({"result":"No data"},204)
     
     def updateUser_model(self,data):
         self.con.reconnect()

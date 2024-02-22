@@ -17,6 +17,10 @@ def login():
 def users():
     return model.getusers_model()
 
+@user.route("/token")
+def tokens():
+    return model.remainingtoken_model(request.get_json())
+
 @user.route("/update", methods=["PUT"])
 def updateUser():
     return model.updateUser_model(request.get_json())

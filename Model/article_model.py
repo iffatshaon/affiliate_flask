@@ -67,6 +67,17 @@ class article_model:
             soup.body.append(soup.head.style)
         except:
             pass
+        token_count = len(str(soup.body).split())
+        ### Remove token counts from total tokens bought out here ###
+        self.cur.execute("SELECT * from users where id=%s",[data["auth"]])
+        result = self.cur.fetchall()
+        id_user = ""
+        token_user = ""
+        if(len(result)>0):
+            id_user = result[0]["id"]
+            token_user = result[0]["token"]
+        self.cur.execute("UPDATE users SET token=%s WHERE id=%s",(int(token_user)-token_count,id_user))
+        ### Remove token counts from total tokens bought out here ###
         img_tags = soup.find_all('img')
         for img in img_tags:
             alt_value = img.get('alt', '')
@@ -81,7 +92,7 @@ class article_model:
         with open(file_path, 'w') as file:
             file.write(str(soup.body))
         self.cur.execute("INSERT INTO article (user, title, link) VALUES (%s, %s, %s)",(data['auth'], title, file_path))
-        return make_response({"result":str(soup.body)}) #send_file("text_file_path",mimetype="txt")
+        return make_response({"result":{"text":str(soup.body),"token_count":token_count}}) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
         # self.con.reconnect()

@@ -133,3 +133,18 @@ class article_model:
         # print(response.json()["hits"])
         # self.getImagePixabay("Yellow flower")
         return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
+    
+    def keyword_model(self, data):
+        self.con.reconnect()
+        message = f"This is about some topic - {data['topic']}. Write the keywords for SEO optimization. Give me only the keywords, no extra texts."
+        messages = [ {"role": "system", "content":
+              "You are a web developer"} ]
+        messages.append(
+            {"role": "user", "content": message},
+        )
+        chat = self.client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages
+        )
+        reply = chat.choices[0].message.content
+        return make_response({"result":reply})

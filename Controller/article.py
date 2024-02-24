@@ -20,3 +20,7 @@ def suggestion():
 @article.route("/list", methods=["GET"])
 def get_list():
     return model.get_list_model(request.get_json())
+
+@article.route("/keyword", methods=["POST"])
+def keyword():
+    return model.keyword_model(request.get_json())

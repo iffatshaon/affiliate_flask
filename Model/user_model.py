@@ -41,10 +41,10 @@ class user_model():
         self.cur = cursor
         
     def encrypt(self,password):
-        # password = password.encode()
-        # hashed = bcrypt.hashpw(password, bcrypt.gensalt(12))
-        # return str(hashed.decode('utf-8'))
-        return password
+        password = password.encode('utf-8')
+        hashed = bcrypt.hashpw(password, bcrypt.gensalt(12))
+        return str(hashed.decode('utf-8'))
+        # return password
 
     def register_model(self,data):
         self.con.reconnect()
@@ -115,12 +115,16 @@ class user_model():
         # getMatch = captcha.match_model({"hash":data['hash'],"text":data['text']})
         getMatch = {'result':True}
         if getMatch['result']:
-            self.cur.execute(f"SELECT * FROM users WHERE username='{data['username']}' and password='{self.encrypt(data['password'])}'")
+            # Check if the provided password matches the stored hashed password
+            self.cur.execute(f"SELECT * FROM users WHERE username='{data['username']}'")
             result = self.cur.fetchall()
-            if len(result)>0:
-                if result[0]['confirm']!=1:
-                    return make_response({"result":False, "reason":"Verify user","email":result[0]["email"]})
-                return make_response({"result":True, "name":result[0]['name'],"email":result[0]["email"]})
+            if(len(result)>0):
+                if bcrypt.checkpw(data['password'].encode('utf-8'), result[0]["password"].encode('utf-8')):
+                    if result[0]['confirm']!="1":
+                        return make_response({"result":False, "reason":"Verify user","email":result[0]["email"]})
+                    return make_response({"result":True, "name":result[0]['name'],"email":result[0]["email"]})
+                else:
+                    return make_response({"result":False,"reason":"Invalid username or password"})
             else:
                 return make_response({"result":False,"reason":"User not found"})
         else:

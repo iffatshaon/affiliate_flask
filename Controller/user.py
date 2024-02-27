@@ -21,6 +21,10 @@ def users():
 def tokens():
     return model.remainingtoken_model(request.get_json())
 
+@user.route("/renew", methods=["POST"])
+def renew():
+    return model.renew_token(request.get_json())
+
 @user.route("/confirm/<hash>")
 def confirmuser(hash):
     return model.confirmuser_model(hash)

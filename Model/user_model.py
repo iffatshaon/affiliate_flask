@@ -9,6 +9,8 @@ import random
 import string
 from bs4 import BeautifulSoup
 import os
+import datetime
+import jwt
 
 captcha = captcha_model()
 
@@ -34,6 +36,14 @@ def send_email(receiver_email, subject, message):
     s.login(smtp_username, smtp_password)
     s.sendmail(smtp_username, receiver_email, msg.as_string())
     s.quit()
+
+def generate_token(username):
+        payload = {
+            'username': username,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)  # Token expiry time
+        }
+        token = jwt.encode(payload, os.getenv("SECRET_KEY"), algorithm='HS256')
+        return token
 
 class user_model():
     def __init__(self):
@@ -110,6 +120,15 @@ class user_model():
         else:
             return make_response({"result":"Nothing to update"},204)
     
+    def renew_token(self,data):
+        try:
+            decode = jwt.decode(data["token"],os.getenv("SECRET_KEY"),"HS256")
+            print(decode)
+            token = generate_token(data['username'])
+            return make_response({"result":True, "token":token})
+        except:
+            return make_response({"result":False})
+    
     def login_model(self,data):
         self.con.reconnect()
         # getMatch = captcha.match_model({"hash":data['hash'],"text":data['text']})
@@ -122,7 +141,8 @@ class user_model():
                 if bcrypt.checkpw(data['password'].encode('utf-8'), result[0]["password"].encode('utf-8')):
                     if result[0]['confirm']!="1":
                         return make_response({"result":False, "reason":"Verify user","email":result[0]["email"]})
-                    return make_response({"result":True, "name":result[0]['name'],"email":result[0]["email"]})
+                    token = generate_token(data['username'])
+                    return make_response({"result":True, "name":result[0]['name'],"email":result[0]["email"], "token":token})
                 else:
                     return make_response({"result":False,"reason":"Invalid username or password"})
             else:

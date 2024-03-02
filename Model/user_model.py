@@ -58,8 +58,8 @@ class user_model():
 
     def register_model(self,data):
         self.con.reconnect()
-        # getMatch = captcha.match_model({"hash":data['hash'],"text":data['text']})
-        getMatch = {'result':True}
+        getMatch = captcha.match_model({"hash":data['hash'],"text":data['text']})
+        # getMatch = {'result':True}
         if getMatch['result']:
             password = self.encrypt(data['password'])
             self.cur.execute(f"SELECT * FROM users where email='{data['email']}' OR mobile='{data['mobile']}'")
@@ -131,8 +131,8 @@ class user_model():
     
     def login_model(self,data):
         self.con.reconnect()
-        # getMatch = captcha.match_model({"hash":data['hash'],"text":data['text']})
-        getMatch = {'result':True}
+        getMatch = captcha.match_model({"hash":data['hash'],"text":data['text']})
+        # getMatch = {'result':True}
         if getMatch['result']:
             # Check if the provided password matches the stored hashed password
             self.cur.execute(f"SELECT * FROM users WHERE username='{data['username']}'")

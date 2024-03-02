@@ -92,7 +92,7 @@ class article_model:
         with open(file_path, 'w') as file:
             file.write(str(soup.body))
         self.cur.execute("INSERT INTO article (user, title, link) VALUES (%s, %s, %s)",(data['auth'], title, file_path))
-        return make_response({"result":{"text":str(soup.body),"token_count":token_count}}) #send_file("text_file_path",mimetype="txt")
+        return make_response({"result":{"text":str(soup.body.text),"token_count":token_count}}) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
         # self.con.reconnect()

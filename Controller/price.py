@@ -16,3 +16,15 @@ def update():
 @price.route("/add", methods=["POST"])
 def add():
     return model.add_model(request.get_json())
+
+@price.route("/get_payments")
+def get_payment():
+    return model.get_payment_model()
+
+@price.route("/payment", methods=["POST"])
+def payment():
+    return model.payment_model(request.get_json())
+
+@price.route("/approve", methods=["POST"])
+def approve():
+    return model.approve_model(request.get_json())

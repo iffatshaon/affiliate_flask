@@ -17,6 +17,10 @@ def update():
 def add():
     return model.add_model(request.get_json())
 
+@price.route("/delete", methods=["POST"])
+def delete():
+    return model.delete_model(request.get_json())
+
 @price.route("/get_payments")
 def get_payment():
     return model.get_payment_model()

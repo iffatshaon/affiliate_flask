@@ -50,7 +50,7 @@ class article_model:
 
     def create_model(self,data):
         self.con.reconnect()
-        message = f"Write an HTML code of an article using the keywords - {data['keywords']}. A {data['site']} site, type - {data['type']}, label - {data['label']}. Number of subheadings - {data['subheading']}. Number of FAQs with answers - {data['faq']}. Place minimum {data['imageCount']} image placeholders in places where images can be inserted, provide an appropriate image label in all the placeholders as alt. Center the Title and images using css styles. Images max width should be document width. Better to keep a video, carousel or image after title. Should be plagiarism free, each time generating new. Only keep the article in your answer. Dont write labels for heading or subheading. Provide a complete blog article."
+        message = f"Write an HTML code of a {data['type']} using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them. There should be: Label - {data['label']}. Number of subheadings - {data['subheading']}. Number of FAQs with answers - {data['faq']}. Minimum 1000 words. Place minimum {data['imageCount']} image placeholders in places where images can be inserted, provide an appropriate image label in all the placeholders as alt. Center the Title and images using inline css styles. Images max width should be document width. Better to keep a video, carousel or image after title. Should be plagiarism free, each time generating new. Only keep the output code in your answer. Dont write labels for heading or subheading. Provide a complete blog article. Dont use any Lorem Ipsum."
         print("The message:",message)
         messages = [ {"role": "system", "content":
               "You are a web developer"} ]
@@ -82,17 +82,21 @@ class article_model:
         for img in img_tags:
             alt_value = img.get('alt', '')
             try:
-                resultImage = self.getImagePixabay(alt_value)
+                resultImage = self.getImagePexels(alt_value) 
                 img['src'] = resultImage
             except:
-                print("Could not find image for:",alt_value)
+                try:
+                    resultImage = self.getImagePixabay(alt_value)
+                except:
+                    print("Could not find image for:",alt_value)
         title = str(soup.body.find("h1").text)
         file_name = datetime.now().strftime("%y%m%d%H%M%S")
         file_path = 'articles/'+file_name+'.txt'
         with open(file_path, 'w') as file:
             file.write(str(soup.body))
         self.cur.execute("INSERT INTO article (user, title, link) VALUES (%s, %s, %s)",(data['auth'], title, file_path))
-        return make_response({"result":{"text":str(soup.body.text),"token_count":token_count}}) #send_file("text_file_path",mimetype="txt")
+        body_contents = ''.join(str(child) for child in soup.body.contents)
+        return make_response({"result":{"text":body_contents,"token_count":token_count}}) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
         # self.con.reconnect()

@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 import requests
 import urllib.parse
 from datetime import datetime
+import markdown
 
 
 class article_model:
@@ -48,10 +49,24 @@ class article_model:
         response = requests.get(url, headers=headers, params=params)
         return response.json()["photos"][0]["src"]["original"]
 
+    def markdown_to_html(self, markdown_text):
+        # Convert Markdown text to HTML
+        html_content = markdown.markdown(markdown_text)
+        html_content = html_content.replace("Image Placeholder: ","")
+        
+        # # Wrap title in <h1> tags
+        # html_content = html_content.replace('<p>**', '<h1>').replace('**</p>', '</h1>')
+        
+        # # Wrap other bold sections in <h2> tags
+        # html_content = html_content.replace('<p>**', '<h2>').replace('**</p>', '</h2>')
+        
+        return html_content
+
     def create_model(self,data):
         self.con.reconnect()
-        message = f"Write an HTML code of a {data['type']} using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them. There should be: Label - {data['label']}. Number of subheadings - {data['subheading']}. Number of FAQs with answers - {data['faq']}. Minimum 1000 words. Place minimum {data['imageCount']} image placeholders in places where images can be inserted, provide an appropriate image label in all the placeholders as alt. Center the Title and images using inline css styles. Images max width should be document width. Better to keep a video, carousel or image after title. Should be plagiarism free, each time generating new. Only keep the output code in your answer. Dont write labels for heading or subheading. Provide a complete blog article. Dont use any Lorem Ipsum."
-        print("The message:",message)
+
+        message = f"Write me a {data['type']} with more than 2000 words using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them. Headings must start from heading level 1. There should be: Label - {data['label']}. Number of subheadings - {data['subheading']}. Number of FAQs with answers - {data['faq']}. Don't give me any examples. Add minimum {data['imageCount']} image placeholders with appropriate labels to the images where possible. Better to keep a video or image after title. Should be plagiarism free, each time generating new. Every paragraph should have a minimum of 5 sentences."
+        
         messages = [ {"role": "system", "content":
               "You are a web developer"} ]
         messages.append(
@@ -61,13 +76,16 @@ class article_model:
             model="gpt-3.5-turbo",
             messages=messages
         )
-        reply = chat.choices[0].message.content
+        reply_md = chat.choices[0].message.content
+        reply = self.markdown_to_html(reply_md)
+        
         soup = BeautifulSoup(reply, features="html.parser")
+        print(soup)
         try:
             soup.body.append(soup.head.style)
         except:
             pass
-        token_count = len(str(soup.body).split())
+        token_count = len(reply_md.split())
         ### Remove token counts from total tokens bought out here ###
         self.cur.execute("SELECT * from users where id=%s",[data["auth"]])
         result = self.cur.fetchall()
@@ -89,14 +107,24 @@ class article_model:
                     resultImage = self.getImagePixabay(alt_value)
                 except:
                     print("Could not find image for:",alt_value)
-        title = str(soup.body.find("h1").text)
+        title = str(soup.find("h1").text)
         file_name = datetime.now().strftime("%y%m%d%H%M%S")
         file_path = 'articles/'+file_name+'.txt'
         with open(file_path, 'w') as file:
-            file.write(str(soup.body))
+            file.write(str(soup))
         self.cur.execute("INSERT INTO article (user, title, link) VALUES (%s, %s, %s)",(data['auth'], title, file_path))
-        body_contents = ''.join(str(child) for child in soup.body.contents)
-        return make_response({"result":{"text":body_contents,"token_count":token_count}}) #send_file("text_file_path",mimetype="txt")
+        
+        body_content=str(soup)+"""
+        <style>
+        h1, h2, h3{
+        text-align:center;
+        }
+        img{
+        width:100%;
+        }
+        </style>
+        """
+        return make_response({"result":{"text":body_content,"token_count":token_count}}) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
         # self.con.reconnect()

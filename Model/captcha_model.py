@@ -37,6 +37,6 @@ class captcha_model:
         if len(result)>0:
             for x in result:
                 if x["text"] == data["text"]:
-                    return make_response({"result":True})
-            return make_response({"result":False})
-        return make_response({"result":False},204)
+                    return {"result":True}
+            return {"result":False}
+        return {"result":False}

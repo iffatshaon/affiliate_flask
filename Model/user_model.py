@@ -37,9 +37,10 @@ def send_email(receiver_email, subject, message):
     s.sendmail(smtp_username, receiver_email, msg.as_string())
     s.quit()
 
-def generate_token(username):
+def generate_token(username, id):
         payload = {
             'username': username,
+            'id':id,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)  # Token expiry time
         }
         token = jwt.encode(payload, os.getenv("SECRET_KEY"), algorithm='HS256')
@@ -141,7 +142,8 @@ class user_model():
                 if bcrypt.checkpw(data['password'].encode('utf-8'), result[0]["password"].encode('utf-8')):
                     if result[0]['confirm']!="1":
                         return make_response({"result":False, "reason":"Verify user","email":result[0]["email"]})
-                    token = generate_token(data['username'])
+                    print("result ", result)
+                    token = generate_token(data['username'],result[0]['id'])
                     return make_response({"result":True, "name":result[0]['name'],"email":result[0]["email"], "token":token})
                 else:
                     return make_response({"result":False,"reason":"Invalid username or password"})

@@ -10,6 +10,18 @@ import urllib.parse
 from datetime import datetime
 import markdown
 
+word_count={"article":1800}
+
+def incLine(key,value):
+    inc_line={
+        "faq":f"Number of FAQs with answers - {value}.",
+        "imageCount":f"Add minimum {value} image placeholders with appropriate labels to the images where possible.",
+        "label":f"There should be a label - {value}",
+        "subheading":f"Number of subheadings - {value}",
+        }
+    if(key not in inc_line):
+        return ""
+    return inc_line[key]
 
 class article_model:
     def __init__(self):
@@ -54,18 +66,16 @@ class article_model:
         html_content = markdown.markdown(markdown_text)
         html_content = html_content.replace("Image Placeholder: ","")
         
-        # # Wrap title in <h1> tags
-        # html_content = html_content.replace('<p>**', '<h1>').replace('**</p>', '</h1>')
-        
-        # # Wrap other bold sections in <h2> tags
-        # html_content = html_content.replace('<p>**', '<h2>').replace('**</p>', '</h2>')
-        
         return html_content
 
     def create_model(self,data):
         self.con.reconnect()
 
-        message = f"Write me a {data['type']} with more than 2000 words using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them. Headings must start from heading level 1. There should be: Label - {data['label']}. Number of subheadings - {data['subheading']}. Number of FAQs with answers - {data['faq']}. Don't give me any examples. Add minimum {data['imageCount']} image placeholders with appropriate labels to the images where possible. Better to keep a video or image after title. Should be plagiarism free, each time generating new. Every paragraph should have a minimum of 5 sentences."
+        message = f"Write me a {data['type']} with more than {word_count[data['type']]} words using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them. Headings must start from heading level 1 (Title must be Heading 1)."
+        for x in data:
+            message+=incLine(x,data[x])
+        message+="Don't give me any examples. Better to keep a video or image after title. Should be plagiarism free, each time generating new. Every paragraph should have a minimum of 5 sentences."
+        print(message)
         
         messages = [ {"role": "system", "content":
               "You are a web developer"} ]
@@ -80,7 +90,7 @@ class article_model:
         reply = self.markdown_to_html(reply_md)
         
         soup = BeautifulSoup(reply, features="html.parser")
-        print(soup)
+        # print(soup)
         try:
             soup.body.append(soup.head.style)
         except:

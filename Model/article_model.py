@@ -132,10 +132,6 @@ class article_model:
         title = str(soup.find("h1").text)
         file_name = datetime.now().strftime("%y%m%d%H%M%S")
         file_path = 'articles/'+file_name+'.txt'
-        with open(file_path, 'w') as file:
-            file.write(str(soup))
-        self.cur.execute("INSERT INTO article (user, title, link) VALUES (%s, %s, %s)",(data['auth'], title, file_path))
-        
         body_content=str(soup)+"""
         <style>
         h1, h2, h3{
@@ -146,6 +142,9 @@ class article_model:
         }
         </style>
         """
+        with open(file_path, 'w') as file:
+            file.write(str(soup))
+        self.cur.execute("INSERT INTO article (user, title, link) VALUES (%s, %s, %s)",(id, title, file_path))
         return make_response({"result":{"text":body_content,"token_count":token_count,"title":title}}) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
@@ -153,6 +152,26 @@ class article_model:
         # print("Hello all")
         asyncio.run(self.getAnswer())
         return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
+    
+    def edit_model(self, data, token):
+        self.con.reconnect()
+        id = self.checkToken(token)
+        if isinstance(id, Response):
+            return id
+        fileName = 'articles/'+data['file']+'.txt'
+        with open(fileName, 'r') as file:
+            file_content = file.read()
+            return make_response({"result":file_content})
+
+    def save_model(self,data, token):
+        self.con.reconnect()
+        id = self.checkToken(token)
+        if isinstance(id, Response):
+            return id
+        fileName = 'articles/'+data['file']+'.txt'
+        with open(fileName, 'w') as file:
+            file.write(data['content'])
+            return make_response({"result":"Saved successfully"}, 201)
 
     def get_list_model(self,data):
         self.con.reconnect()

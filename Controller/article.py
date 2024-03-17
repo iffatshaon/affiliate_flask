@@ -24,3 +24,11 @@ def get_list():
 @article.route("/keyword", methods=["POST"])
 def keyword():
     return model.keyword_model(request.get_json())
+
+@article.route("/edit", methods=["POST"])
+def edit():
+    return model.edit_model(request.get_json(), request.headers.get("Authorization"))
+
+@article.route("/save", methods=["POST"])
+def save():
+    return model.save_model(request.get_json(), request.headers.get("Authorization"))

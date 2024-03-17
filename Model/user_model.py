@@ -1,5 +1,5 @@
 from Utils.database import cursor,connection
-from flask import make_response
+from flask import make_response, Response
 from Model.captcha_model import captcha_model
 import bcrypt
 import smtplib
@@ -56,6 +56,15 @@ class user_model():
         hashed = bcrypt.hashpw(password, bcrypt.gensalt(12))
         return str(hashed.decode('utf-8'))
         # return password
+    
+    def checkToken(self,token):
+        if not token:
+            return make_response({"result": "Token not found"}, 400)
+        try:
+            decode = jwt.decode(token,os.getenv("SECRET_KEY"),"HS256")
+            return decode['id']
+        except:
+            return make_response({"result": "Token expired"}, 400)
 
     def register_model(self,data):
         self.con.reconnect()
@@ -98,23 +107,29 @@ class user_model():
         else:
             return make_response({"result":"No data"},204)
     
-    def remainingtoken_model(self,data):
+    def remainingtoken_model(self,token):
         self.con.reconnect()
-        self.cur.execute("SELECT token FROM users where id=%s",[data["auth"]])
+        id = self.checkToken(token)
+        if isinstance(id, Response):
+            return id
+        self.cur.execute("SELECT token FROM users where id=%s",[id])
         result = self.cur.fetchall()
         if len(result)>0:
             return make_response({"result":result})
         else:
             return make_response({"result":"No data"},204)
     
-    def updateUser_model(self,data):
+    def updateUser_model(self, data, token):
         self.con.reconnect()
+        id = self.checkToken(token)
+        if isinstance(id, Response):
+            return id
         sql = "UPDATE users SET"
         for x in data:
             if x != "id":
                 sql+=f" {x}='{data[x]}',"
         sql = sql[:-1]
-        sql += f" WHERE id={data['id']}"
+        sql += f" WHERE id={id}"
         self.cur.execute(sql)
         if self.cur.rowcount>0:
             return make_response({"result":data},201)
@@ -123,12 +138,13 @@ class user_model():
     
     def renew_token(self,data):
         try:
+            print(data)
             decode = jwt.decode(data["token"],os.getenv("SECRET_KEY"),"HS256")
             print(decode)
-            token = generate_token(data['username'])
+            token = generate_token(decode['username'],decode['id'])
             return make_response({"result":True, "token":token})
-        except:
-            return make_response({"result":False})
+        except Exception as err:
+            return make_response({"result":False, "error":str(err)}, 400)
     
     def login_model(self,data):
         self.con.reconnect()
@@ -142,7 +158,6 @@ class user_model():
                 if bcrypt.checkpw(data['password'].encode('utf-8'), result[0]["password"].encode('utf-8')):
                     if result[0]['confirm']!="1":
                         return make_response({"result":False, "reason":"Verify user","email":result[0]["email"]})
-                    print("result ", result)
                     token = generate_token(data['username'],result[0]['id'])
                     return make_response({"result":True, "name":result[0]['name'],"email":result[0]["email"], "token":token})
                 else:

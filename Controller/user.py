@@ -19,7 +19,7 @@ def users():
 
 @user.route("/token")
 def tokens():
-    return model.remainingtoken_model(request.get_json())
+    return model.remainingtoken_model(request.headers.get('Authorization'))
 
 @user.route("/renew", methods=["POST"])
 def renew():
@@ -31,4 +31,4 @@ def confirmuser(hash):
 
 @user.route("/update", methods=["PUT"])
 def updateUser():
-    return model.updateUser_model(request.get_json())
+    return model.updateUser_model(request.get_json(),request.headers.get('Authorization'))

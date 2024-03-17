@@ -7,7 +7,7 @@ article = Blueprint("article_blueprint",__name__)
 
 @article.route("/create", methods=["POST"])
 def create():
-    return model.create_model(request.get_json())
+    return model.create_model(request.get_json(), request.headers.get("Authorization"))
 
 @article.route("/createfree", methods=["POST"])
 def createfree():

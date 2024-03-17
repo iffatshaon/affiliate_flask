@@ -97,4 +97,4 @@ class wordpress_model:
             self.cur.execute(sql)
             return make_response({"result": "Article posted successfully! Post ID: "+post_id}, 201)
         except Exception as err:
-            return make_response({"result":"Unable to publish", "error":err},500)
+            return make_response({"result":"Unable to publish", "error":str(err)},500)

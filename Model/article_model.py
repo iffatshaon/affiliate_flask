@@ -1,5 +1,5 @@
 from Utils.database import cursor, connection
-from flask import make_response, send_file
+from flask import make_response, Response
 import asyncio
 from sydney import SydneyClient
 import os
@@ -9,6 +9,7 @@ import requests
 import urllib.parse
 from datetime import datetime
 import markdown
+import jwt
 
 word_count={"article":1800}
 
@@ -30,6 +31,15 @@ class article_model:
         self.client = OpenAI(api_key=os.getenv("GPT_SECRET"))
         self.cur = cursor
     
+    def checkToken(self,token):
+        if not token:
+            return make_response({"result": "Token not found"}, 400)
+        try:
+            decode = jwt.decode(token,os.getenv("SECRET_KEY"),"HS256")
+            return decode['id']
+        except:
+            return make_response({"result": "Token expired"}, 400)
+
     async def getAnswer(e) -> None:
         print(e)
         async with SydneyClient() as sydney:
@@ -68,9 +78,11 @@ class article_model:
         
         return html_content
 
-    def create_model(self,data):
+    def create_model(self, data, token):
         self.con.reconnect()
-
+        id = self.checkToken(token)
+        if isinstance(id, Response):
+            return id
         message = f"Write me a {data['type']} with more than {word_count[data['type']]} words using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them. Headings must start from heading level 1 (Title must be Heading 1)."
         for x in data:
             message+=incLine(x,data[x])
@@ -97,7 +109,7 @@ class article_model:
             pass
         token_count = len(reply_md.split())
         ### Remove token counts from total tokens bought out here ###
-        self.cur.execute("SELECT * from users where id=%s",[data["auth"]])
+        self.cur.execute("SELECT * from users where id=%s",[id])
         result = self.cur.fetchall()
         id_user = ""
         token_user = ""
@@ -134,7 +146,7 @@ class article_model:
         }
         </style>
         """
-        return make_response({"result":{"text":body_content,"token_count":token_count}}) #send_file("text_file_path",mimetype="txt")
+        return make_response({"result":{"text":body_content,"token_count":token_count,"title":title}}) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
         # self.con.reconnect()

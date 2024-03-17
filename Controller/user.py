@@ -32,3 +32,7 @@ def confirmuser(hash):
 @user.route("/update", methods=["PUT"])
 def updateUser():
     return model.updateUser_model(request.get_json(),request.headers.get('Authorization'))
+
+@user.route("/delete", methods=["POST"])
+def deleteUser():
+    return model.delete_model(request.get_json())

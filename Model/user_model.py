@@ -167,3 +167,11 @@ class user_model():
         else:
             return make_response({"result":"Invalid captcha"})
         
+    def delete_model(self, data):
+        self.con.reconnect()
+        sql = f"DELETE FROM users WHERE id = {data['id']}"
+        self.cur.execute(sql)
+        if self.cur.rowcount>0:
+            return make_response({"result":data},201)
+        else:
+            return make_response({"result":"Nothing to delete"},400)

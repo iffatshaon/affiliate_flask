@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 import os
 import datetime
 import jwt
+from Utils.helpers import checkAdmin,checkToken
 
 captcha = captcha_model()
 
@@ -46,7 +47,7 @@ def generate_token(username, id):
         token = jwt.encode(payload, str(os.getenv("SECRET_KEY")), algorithm='HS256')
         return token
 
-class user_model():
+class users_model():
     def __init__(self):
         self.con = connection
         self.cur = cursor
@@ -56,15 +57,6 @@ class user_model():
         hashed = bcrypt.hashpw(password, bcrypt.gensalt(12))
         return str(hashed.decode('utf-8'))
         # return password
-    
-    def checkToken(self,token):
-        if not token:
-            return make_response({"result": "Token not found"}, 401)
-        try:
-            decode = jwt.decode(token,str(os.getenv("SECRET_KEY")),"HS256")
-            return decode['id']
-        except:
-            return make_response({"result": "Token expired"}, 401)
 
     def register_model(self,data):
         self.con.reconnect()
@@ -107,9 +99,9 @@ class user_model():
         else:
             return make_response({"result":"No data"},204)
         
-    def get_single_user_model(self,token):
+    def get_personal_model(self,token):
         self.con.reconnect()
-        id_check = self.checkToken(token)
+        id_check = checkToken(token)
         if isinstance(id_check, Response):
             return id_check
         self.cur.execute(f"SELECT * FROM users where id={id_check}")
@@ -118,10 +110,19 @@ class user_model():
             return make_response({"result":result})
         else:
             return make_response({"result":"No data"},204)
+
+    def get_single_user_model(self,id,token):
+        self.con.reconnect()
+        self.cur.execute(f"SELECT * FROM users where id={id}")
+        result = self.cur.fetchall()
+        if len(result)>0:
+            return make_response({"result":result})
+        else:
+            return make_response({"result":"No data"},204)
     
     def remainingtoken_model(self,token):
         self.con.reconnect()
-        id = self.checkToken(token)
+        id = checkToken(token)
         if isinstance(id, Response):
             return id
         self.cur.execute("SELECT token FROM users where id=%s",[id])
@@ -131,24 +132,26 @@ class user_model():
         else:
             return make_response({"result":"No data"},204)
     
-    def updateUser_model(self, data, token):
+    def updateUser_model(self, data, id_d, token):
         self.con.reconnect()
-        id = self.checkToken(token)
+        id = checkToken(token)
         if isinstance(id, Response):
             return id
+        if not (int(id_d)==int(id) or checkAdmin(id)):
+            return make_response({"result":"Unauthorized access"}, 401)
         sql = "UPDATE users SET"
         for x in data:
             if x != "id":
                 sql+=f" {x}='{data[x]}',"
         sql = sql[:-1]
-        sql += f" WHERE id={id}"
+        sql += f" WHERE id={id_d}"
         self.cur.execute(sql)
         if self.cur.rowcount>0:
             return make_response({"result":data},201)
         else:
             return make_response({"result":"Nothing to update"},204)
     
-    def renew_token(self,data):
+    def renew_token(self,id,data):
         try:
             print(data)
             decode = jwt.decode(data["token"],str(os.getenv("SECRET_KEY")),"HS256")
@@ -161,9 +164,7 @@ class user_model():
     def login_model(self,data):
         self.con.reconnect()
         getMatch = captcha.match_model({"hash":data['hash'],"text":data['text']})
-        # getMatch = {'result':True}
         if getMatch['result']:
-            # Check if the provided password matches the stored hashed password
             self.cur.execute(f"SELECT * FROM users WHERE username='{data['username']}'")
             result = self.cur.fetchall()
             if(len(result)>0):
@@ -179,11 +180,16 @@ class user_model():
         else:
             return make_response({"result":"Invalid captcha"})
         
-    def delete_model(self, data):
+    def delete_model(self, id, token):
         self.con.reconnect()
-        sql = f"DELETE FROM users WHERE id = {data['id']}"
+        id_d = checkToken(token)
+        if isinstance(id_d, Response):
+            return id_d
+        if not (int(id_d)==int(id) or checkAdmin(id_d)):
+            return make_response({"result":"Unauthorized access"}, 401)
+        sql = f"DELETE FROM users WHERE id = {id}"
         self.cur.execute(sql)
         if self.cur.rowcount>0:
-            return make_response({"result":data},201)
+            return make_response({"result":f"User deleted by id:{id}"},201)
         else:
-            return make_response({"result":"Nothing to delete"},400)
+            return make_response({"result":f"User not found by id:{id}"},400)

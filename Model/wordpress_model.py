@@ -15,7 +15,7 @@ class wordpress_model:
         if not token:
             return make_response({"result": "Token not found"}, 401)
         try:
-            decode = jwt.decode(token,os.getenv("SECRET_KEY"),"HS256")
+            decode = jwt.decode(token,str(os.getenv("SECRET_KEY")),"HS256")
             return decode['id']
         except:
             return make_response({"result": "Token expired"}, 401)

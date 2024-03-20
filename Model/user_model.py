@@ -43,7 +43,7 @@ def generate_token(username, id):
             'id':id,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)  # Token expiry time
         }
-        token = jwt.encode(payload, os.getenv("SECRET_KEY"), algorithm='HS256')
+        token = jwt.encode(payload, str(os.getenv("SECRET_KEY")), algorithm='HS256')
         return token
 
 class user_model():
@@ -61,7 +61,7 @@ class user_model():
         if not token:
             return make_response({"result": "Token not found"}, 401)
         try:
-            decode = jwt.decode(token,os.getenv("SECRET_KEY"),"HS256")
+            decode = jwt.decode(token,str(os.getenv("SECRET_KEY")),"HS256")
             return decode['id']
         except:
             return make_response({"result": "Token expired"}, 401)
@@ -151,7 +151,7 @@ class user_model():
     def renew_token(self,data):
         try:
             print(data)
-            decode = jwt.decode(data["token"],os.getenv("SECRET_KEY"),"HS256")
+            decode = jwt.decode(data["token"],str(os.getenv("SECRET_KEY")),"HS256")
             print(decode)
             token = generate_token(decode['username'],decode['id'])
             return make_response({"result":True, "token":token})

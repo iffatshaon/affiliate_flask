@@ -17,6 +17,10 @@ def login():
 def users():
     return model.getusers_model()
 
+@user.route("/")
+def singleUser():
+    return model.get_single_user_model(request.headers.get('Authorization'))
+
 @user.route("/token")
 def tokens():
     return model.remainingtoken_model(request.headers.get('Authorization'))

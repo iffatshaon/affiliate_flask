@@ -59,12 +59,12 @@ class user_model():
     
     def checkToken(self,token):
         if not token:
-            return make_response({"result": "Token not found"}, 400)
+            return make_response({"result": "Token not found"}, 401)
         try:
             decode = jwt.decode(token,os.getenv("SECRET_KEY"),"HS256")
             return decode['id']
         except:
-            return make_response({"result": "Token expired"}, 400)
+            return make_response({"result": "Token expired"}, 401)
 
     def register_model(self,data):
         self.con.reconnect()
@@ -101,6 +101,18 @@ class user_model():
     def getusers_model(self):
         self.con.reconnect()
         self.cur.execute("SELECT * FROM users")
+        result = self.cur.fetchall()
+        if len(result)>0:
+            return make_response({"result":result})
+        else:
+            return make_response({"result":"No data"},204)
+        
+    def get_single_user_model(self,token):
+        self.con.reconnect()
+        id_check = self.checkToken(token)
+        if isinstance(id_check, Response):
+            return id_check
+        self.cur.execute(f"SELECT * FROM users where id={id_check}")
         result = self.cur.fetchall()
         if len(result)>0:
             return make_response({"result":result})

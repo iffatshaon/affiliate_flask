@@ -11,14 +11,17 @@ from datetime import datetime
 import markdown
 import jwt
 
-word_count={"article":1800}
+word_count={"info article":2800, "blog article":2800, "manual subheading article":2800}
 
 def incLine(key,value):
     inc_line={
-        "faq":f"Number of FAQs with answers - {value}.",
-        "imageCount":f"Add minimum {value} image placeholders with appropriate labels to the images where possible.",
-        "label":f"There should be a label - {value}",
-        "subheading":f"Number of subheadings - {value}",
+        "numFaq":f"Number of FAQs with answers - {value}.",
+        "numImage":f"Add minimum {value} image placeholders with appropriate labels to the images where possible. All images should be different.",
+        "label":f"There should be a label - {value}.",
+        "numSubheading":f"Number of subheadings - {value}.",
+        "subheadings":f"The subheadings of the article are - {value}.",
+        "title":f"The title of the article is {value}.",
+        "websiteCategory":f"The category of the website is {value}."
         }
     if(key not in inc_line):
         return ""
@@ -33,12 +36,12 @@ class article_model:
     
     def checkToken(self,token):
         if not token:
-            return make_response({"result": "Token not found"}, 400)
+            return make_response({"result": "Token not found"}, 401)
         try:
             decode = jwt.decode(token,os.getenv("SECRET_KEY"),"HS256")
             return decode['id']
         except:
-            return make_response({"result": "Token expired"}, 400)
+            return make_response({"result": "Token expired"}, 401)
 
     async def getAnswer(e) -> None:
         print(e)

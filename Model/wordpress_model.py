@@ -13,12 +13,12 @@ class wordpress_model:
     
     def checkToken(self,token):
         if not token:
-            return make_response({"result": "Token not found"}, 400)
+            return make_response({"result": "Token not found"}, 401)
         try:
             decode = jwt.decode(token,os.getenv("SECRET_KEY"),"HS256")
             return decode['id']
         except:
-            return make_response({"result": "Token expired"}, 400)
+            return make_response({"result": "Token expired"}, 401)
     
     def getall_model(self,token):
         self.con.reconnect()

@@ -92,10 +92,10 @@ class users_model():
 
     def getusers_model(self):
         self.con.reconnect()
-        self.cur.execute("SELECT * FROM users")
+        self.cur.execute("SELECT id,name,mobile,username,email FROM users")
         result = self.cur.fetchall()
         if len(result)>0:
-            return make_response({"result":result})
+            return make_response(result)
         else:
             return make_response({"result":"No data"},204)
         
@@ -104,10 +104,10 @@ class users_model():
         id_check = checkToken(token)
         if isinstance(id_check, Response):
             return id_check
-        self.cur.execute(f"SELECT * FROM users where id={id_check}")
+        self.cur.execute(f"SELECT id,name,mobile,username,email FROM users where id={id_check}")
         result = self.cur.fetchall()
         if len(result)>0:
-            return make_response({"result":result})
+            return make_response(result[0])
         else:
             return make_response({"result":"No data"},204)
 

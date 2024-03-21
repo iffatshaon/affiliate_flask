@@ -10,8 +10,16 @@ import urllib.parse
 from datetime import datetime
 import markdown
 import jwt
+from Utils.helpers import checkToken
 
-word_count={"info article":2800, "blog article":2800, "manual subheading article":2800}
+word_count={
+        "info article":2800, 
+        "blog article":2800, 
+        "manual subheading article":2800, 
+        "product category":2000, 
+        "amazon review":2000,
+
+        }
 
 def incLine(key,value):
     inc_line={
@@ -21,7 +29,12 @@ def incLine(key,value):
         "numSubheading":f"Number of subheadings - {value}.",
         "subheadings":f"The subheadings of the article are - {value}.",
         "title":f"The title of the article is {value}.",
-        "websiteCategory":f"The category of the website is {value}."
+        "websiteCategory":f"The category of the website is {value}.",
+        "productCategory":f"The category of the product is {value}.",
+        "numOfProductPerArticle":f"There must be a minium of {value} products in the article.",
+        "minimumPrice":f"The minimum price is {value}.",
+        "maximumPrice":f"The maximum price is {value}.",
+
         }
     if(key not in inc_line):
         return ""
@@ -38,7 +51,7 @@ class article_model:
         if not token:
             return make_response({"result": "Token not found"}, 401)
         try:
-            decode = jwt.decode(token,os.getenv("SECRET_KEY"),"HS256")
+            decode = jwt.decode(token,str(os.getenv("SECRET_KEY")),"HS256")
             return decode['id']
         except:
             return make_response({"result": "Token expired"}, 401)
@@ -83,7 +96,7 @@ class article_model:
 
     def create_model(self, data, token):
         self.con.reconnect()
-        id = self.checkToken(token)
+        id = checkToken(token)
         if isinstance(id, Response):
             return id
         message = f"Write me a {data['type']} with more than {word_count[data['type']]} words using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them. Headings must start from heading level 1 (Title must be Heading 1)."
@@ -158,7 +171,7 @@ class article_model:
     
     def edit_model(self, data, token):
         self.con.reconnect()
-        id = self.checkToken(token)
+        id = checkToken(token)
         if isinstance(id, Response):
             return id
         fileName = 'articles/'+data['file']+'.txt'
@@ -168,7 +181,7 @@ class article_model:
 
     def save_model(self,data, token):
         self.con.reconnect()
-        id = self.checkToken(token)
+        id = checkToken(token)
         if isinstance(id, Response):
             return id
         fileName = 'articles/'+data['file']+'.txt'

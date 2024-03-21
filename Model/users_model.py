@@ -80,8 +80,8 @@ class users_model():
                     a_tag["href"]="http://127.0.0.1:5000/user/confirm/"+confirm_hash
                     send_email(data["email"], subject, str(soup))
                     return make_response({"result":"Verification link sent to mail"},201)
-                except:
-                    return make_response({"result":"Unable to Register"},204)
+                except Exception as err:
+                    return make_response({"result":"Unable to Register","error":str(err)},400)
         else:
             return make_response({"result":"Invalid captcha"},204)
     

@@ -172,7 +172,7 @@ class users_model():
                     if result[0]['confirm']!="1":
                         return make_response({"result":False, "reason":"Verify user","email":result[0]["email"]})
                     token = generate_token(data['username'],result[0]['id'])
-                    return make_response({"result":True, "name":result[0]['name'],"email":result[0]["email"], "token":token})
+                    return make_response({"result":True, "token":token})
                 else:
                     return make_response({"result":False,"reason":"Invalid username or password"})
             else:
@@ -214,4 +214,4 @@ class users_model():
         for token_id, entry_list in entries.items():
             entries[token_id] = [entry for entry in entry_list if entry[0] > recent_time]
             print(entries)
-        return make_response({"result":"Logged out successfully", "res":str(entries)})
+        return make_response({"result":"Logged out successfully"})

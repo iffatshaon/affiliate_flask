@@ -44,3 +44,7 @@ def updateUser(id):
 @users.route("/<id>", methods=["DELETE"])
 def deleteUser(id):
     return model.delete_model(id, request.headers.get("Authorization"))
+
+@users.route("/logout")
+def logout():
+    return model.logout_model(request.headers.get("Authorization"))

@@ -11,9 +11,11 @@ from bs4 import BeautifulSoup
 import os
 import datetime
 import jwt
-from Utils.helpers import checkAdmin,checkToken
+from Utils.helpers import checkAdmin,checkToken, entries
 
 captcha = captcha_model()
+
+timeout=30
 
 def generate_random_string(length=16):
     characters = string.ascii_letters + string.digits
@@ -42,7 +44,7 @@ def generate_token(username, id):
         payload = {
             'username': username,
             'id':id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)  # Token expiry time
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=timeout)  # Token expiry time
         }
         token = jwt.encode(payload, str(os.getenv("SECRET_KEY")), algorithm='HS256')
         return token
@@ -77,7 +79,7 @@ class users_model():
                         message = file.read()
                     soup = BeautifulSoup(message,"html.parser")
                     a_tag = soup.find('a')
-                    a_tag["href"]="http://127.0.0.1:5000/user/confirm/"+confirm_hash
+                    a_tag["href"]="https://faisaliteb.ai/confirm-mail/"+confirm_hash
                     send_email(data["email"], subject, str(soup))
                     return make_response({"result":"Verification link sent to mail"},201)
                 except Exception as err:
@@ -153,9 +155,7 @@ class users_model():
     
     def renew_token(self,id,data):
         try:
-            print(data)
             decode = jwt.decode(data["token"],str(os.getenv("SECRET_KEY")),"HS256")
-            print(decode)
             token = generate_token(decode['username'],decode['id'])
             return make_response({"result":True, "token":token})
         except Exception as err:
@@ -179,6 +179,7 @@ class users_model():
                 return make_response({"result":False,"reason":"User not found"})
         else:
             return make_response({"result":"Invalid captcha"})
+
         
     def delete_model(self, id, token):
         self.con.reconnect()
@@ -193,3 +194,24 @@ class users_model():
             return make_response({"result":f"User deleted by id:{id}"},201)
         else:
             return make_response({"result":f"User not found by id:{id}"},400)
+    
+    def logout_model(self,token):
+        id_d = checkToken(token)
+        if isinstance(id_d, Response):
+            return id_d
+        current_time = datetime.datetime.now()
+        entry = (current_time, token)
+        if id in entries:
+            flag=True
+            for existing_entry in entries[id]:
+                if existing_entry[1] == token:
+                    flag=False
+            if flag:
+                entries[id].append(entry)
+        else:
+            entries[id] = [entry]
+        recent_time = current_time - datetime.timedelta(minutes=timeout)
+        for token_id, entry_list in entries.items():
+            entries[token_id] = [entry for entry in entry_list if entry[0] > recent_time]
+            print(entries)
+        return make_response({"result":"Logged out successfully", "res":str(entries)})

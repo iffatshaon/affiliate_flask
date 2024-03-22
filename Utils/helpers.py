@@ -2,9 +2,13 @@ import jwt
 from flask import make_response
 import os
 
+entries = {}
+
 def checkToken(token):
         if not token:
             return make_response({"result": "Token not found"}, 401)
+        if token in entries:
+            return make_response({"result": "Token expired"}, 401)
         try:
             token = token.split()[1]
             print("Token ",token)

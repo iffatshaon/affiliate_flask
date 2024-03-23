@@ -29,7 +29,7 @@ def tokens():
 def renew(id):
     return model.renew_token(id, request.get_json())
 
-@users.route("/confirm/<hash>")
+@users.route("/confirm/<hash>", methods=["PUT"])
 def confirmuser(hash):
     return model.confirmuser_model(hash)
 

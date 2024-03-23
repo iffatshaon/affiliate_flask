@@ -90,7 +90,7 @@ class users_model():
     def confirmuser_model(self,data):
         self.con.reconnect()
         self.cur.execute(f"UPDATE users set confirm='1' where confirm='{data}'")
-        return make_response({"result":"Registration successful"},201)
+        return make_response({"result":"Registration successful"},200)
 
     def getusers_model(self):
         self.con.reconnect()

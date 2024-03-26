@@ -18,7 +18,13 @@ word_count={
         "manual subheading article":2800, 
         "product category":2000, 
         "amazon review":2000,
-
+        "human touch content":2000,
+        "info article":2000,
+        "content rewrite":2000,
+        "generated conclusion":2000,
+        "generated introduction":2000,
+        "blog article outline":2000,
+        "blog single paragraph":2000
         }
 
 def incLine(key,value):
@@ -34,8 +40,10 @@ def incLine(key,value):
         "numOfProductPerArticle":f"There must be a minium of {value} products in the article.",
         "minimumPrice":f"The minimum price is {value}.",
         "maximumPrice":f"The maximum price is {value}.",
-
+        "fullContent":f"The full content: {value}",
+        "tone":f"The tone of the article will be {value}"
         }
+    print(inc_line.keys())
     if(key not in inc_line):
         return ""
     return inc_line[key]
@@ -159,7 +167,7 @@ class article_model:
         </style>
         """
         with open(file_path, 'w') as file:
-            file.write(str(soup))
+            file.write(body_content)
         self.cur.execute("INSERT INTO article (user, title, link) VALUES (%s, %s, %s)",(id, title, file_path))
         return make_response({"result":{"text":body_content,"token_count":token_count,"title":title}}) #send_file("text_file_path",mimetype="txt")
     
@@ -169,29 +177,32 @@ class article_model:
         asyncio.run(self.getAnswer())
         return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
     
-    def edit_model(self, data, token):
+    def edit_model(self, file_id, token):
         self.con.reconnect()
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        fileName = 'articles/'+data['file']+'.txt'
+        fileName = 'articles/'+file_id+'.txt'
         with open(fileName, 'r') as file:
             file_content = file.read()
             return make_response({"result":file_content})
 
-    def save_model(self,data, token):
+    def save_model(self, file_id, data, token):
         self.con.reconnect()
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        fileName = 'articles/'+data['file']+'.txt'
+        fileName = 'articles/'+file_id+'.txt'
         with open(fileName, 'w') as file:
             file.write(data['content'])
             return make_response({"result":"Saved successfully"}, 201)
 
-    def get_list_model(self,data):
+    def get_list_model(self,token):
         self.con.reconnect()
-        self.cur.execute("SELECT * FROM article WHERE user=%s",[data['auth']])
+        id = checkToken(token)
+        if isinstance(id, Response):
+            return id
+        self.cur.execute("SELECT * FROM article WHERE user=%s",[id])
         result = self.cur.fetchall()
         return make_response({"result":result})
     

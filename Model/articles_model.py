@@ -10,6 +10,7 @@ import urllib.parse
 from datetime import datetime
 import markdown
 import jwt
+from googlesearch import search
 from Utils.helpers import checkToken
 
 word_count={
@@ -107,6 +108,8 @@ class articles_model:
         id = checkToken(token)
         if isinstance(id, Response):
             return id
+        if data['type'] not in word_count:
+            return make_response({"result": "Category not found"}, 401)
         message = f"Write me a {data['type']} with more than {word_count[data['type']]} words using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them. Headings must start from heading level 1 (Title must be Heading 1)."
         for x in data:
             message+=incLine(x,data[x])
@@ -207,10 +210,17 @@ class articles_model:
         return make_response({"result":result})
     
     def suggestion_model(self,data):
-        file_path = 'articles/output.txt'
-        with open(file_path, 'r') as file:
-            file.read()
-        # self.con.reconnect()
+        self.con.reconnect()
+        suggestion_sites = []
+        query = ' '.join(data['keywords']) + " suggestions"
+        for url in search(query, num=5, stop=3, pause=2):  # Adjust num and stop as per your requirement
+            try:
+                page = requests.get(url)
+                soup = BeautifulSoup(page.content, 'html.parser')
+                title = soup.title.string
+                suggestion_sites.append((title, url))
+            except Exception as e:
+                print(f"Error fetching data from {url}: {e}")
         # url = "https://www.helpscout.com/blog/"
         # req = requests.get(url)
         # soup = BeautifulSoup(req.content, 'html.parser')
@@ -232,7 +242,7 @@ class articles_model:
         # response = requests.get(api_url)
         # print(response.json()["hits"])
         # self.getImagePixabay("Yellow flower")
-        return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
+        return make_response({"result":suggestion_sites}) #send_file("text_file_path",mimetype="txt")
     
     def keyword_model(self, data):
         self.con.reconnect()

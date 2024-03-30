@@ -108,7 +108,7 @@ class articles_model:
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        if data['type'] not in word_count:
+        if (data['type'] not in word_count) or ('keywords' not in data):
             return make_response({"result": "Category not found"}, 401)
         message = f"Write me a {data['type']} with more than {word_count[data['type']]} words using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them. Headings must start from heading level 1 (Title must be Heading 1)."
         for x in data:

@@ -171,8 +171,8 @@ class articles_model:
         """
         with open(file_path, 'w') as file:
             file.write(body_content)
-        self.cur.execute("INSERT INTO article (user, title, link) VALUES (%s, %s, %s)",(id, title, file_path))
-        return make_response({"article_id":file_name,"token_count":token_count,"title":title}) #send_file("text_file_path",mimetype="txt")
+        self.cur.execute("INSERT INTO article (id, user, title, link, token_count, prompt) VALUES (%s, %s, %s, %s, %s, %s)",(file_name, id, title, file_path, token_count, str(data)))
+        return make_response({"article_id":file_name}) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
         # self.con.reconnect()
@@ -185,10 +185,12 @@ class articles_model:
         id = checkToken(token)
         if isinstance(id, Response):
             return id
+        self.cur.execute("SELECT * from article where id=%s and user=%s",[file_id,id])
+        result = self.cur.fetchall()
         fileName = 'articles/'+file_id+'.txt'
         with open(fileName, 'r') as file:
             file_content = file.read()
-            return make_response({"result":file_content})
+            return make_response({"content":file_content,"token_count":result[0]['token_count'],"title":result[0]['title']})
 
     def save_model(self, file_id, data, token):
         self.con.reconnect()

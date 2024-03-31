@@ -202,7 +202,11 @@ class articles_model:
         fileName = 'articles/'+file_id+'.txt'
         with open(fileName, 'w') as file:
             file.write(data['content'])
-            return make_response({"result":"Saved successfully"}, 201)
+            try:
+                self.cur.execute("UPDATE article SET title=%s where id=%s",[data['title'],file_id])
+                return make_response({"result":"Saved successfully"}, 201)
+            except Exception as e:
+                return make_response({"result":"Unable to update", "error":str(e)},401)
 
     def get_list_model(self,token):
         self.con.reconnect()

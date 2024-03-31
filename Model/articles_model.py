@@ -44,7 +44,6 @@ def incLine(key,value):
         "fullContent":f"The full content: {value}",
         "tone":f"The tone of the article will be {value}"
         }
-    print(inc_line.keys())
     if(key not in inc_line):
         return ""
     return inc_line[key]
@@ -114,7 +113,7 @@ class articles_model:
         for x in data:
             message+=incLine(x,data[x])
         message+="Don't give me any examples. Better to keep a video or image after title. Should be plagiarism free, each time generating new. Every paragraph should have a minimum of 5 sentences."
-        print(message)
+        # print(message)
         
         messages = [ {"role": "system", "content":
               "You are a web developer"} ]
@@ -172,7 +171,7 @@ class articles_model:
         with open(file_path, 'w') as file:
             file.write(body_content)
         self.cur.execute("INSERT INTO article (id, user, title, link, token_count, prompt) VALUES (%s, %s, %s, %s, %s, %s)",(file_name, id, title, file_path, token_count, str(data)))
-        return make_response({"article_id":file_name}) #send_file("text_file_path",mimetype="txt")
+        return make_response({"article_id":file_name}, 201) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
         # self.con.reconnect()
@@ -187,10 +186,13 @@ class articles_model:
             return id
         self.cur.execute("SELECT * from article where id=%s and user=%s",[file_id,id])
         result = self.cur.fetchall()
-        fileName = 'articles/'+file_id+'.txt'
-        with open(fileName, 'r') as file:
-            file_content = file.read()
-            return make_response({"content":file_content,"token_count":result[0]['token_count'],"title":result[0]['title']})
+        if(len(result)>0):
+            fileName = 'articles/'+file_id+'.txt'
+            with open(fileName, 'r') as file:
+                file_content = file.read()
+                return make_response({"content":file_content,"token_count":result[0]['token_count'],"title":result[0]['title']})
+        else:
+            return make_response({"Error":"File not found under this user"},401)
 
     def save_model(self, file_id, data, token):
         self.con.reconnect()

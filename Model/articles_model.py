@@ -172,7 +172,7 @@ class articles_model:
         with open(file_path, 'w') as file:
             file.write(body_content)
         self.cur.execute("INSERT INTO article (user, title, link) VALUES (%s, %s, %s)",(id, title, file_path))
-        return make_response({"result":{"text":body_content,"token_count":token_count,"title":title}}) #send_file("text_file_path",mimetype="txt")
+        return make_response({"article_id":file_name,"token_count":token_count,"title":title}) #send_file("text_file_path",mimetype="txt")
     
     def free_model(self,data):
         # self.con.reconnect()

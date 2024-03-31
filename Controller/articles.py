@@ -5,7 +5,7 @@ model = articles_model()
 
 articles = Blueprint("articles_blueprint",__name__)
 
-@articles.route("/", methods=["POST"])
+@articles.route("", methods=["POST"])
 def create():
     return model.create_model(request.get_json(), request.headers.get("Authorization"))
 
@@ -17,7 +17,7 @@ def createfree():
 def suggestion():
     return model.suggestion_model(request.get_json())
 
-@articles.route("/", methods=["GET"])
+@articles.route("", methods=["GET"])
 def get_list():
     return model.get_list_model(request.headers.get("Authorization"))
 

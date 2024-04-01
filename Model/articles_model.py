@@ -101,7 +101,7 @@ class articles_model:
             return id
         if (data['type'] not in word_count):
             return make_response({"result": "Category not found"}, 400)
-        message = f"Write me a {data['type']} with more than {word_count[data['type']]} words using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them. Headings must start from heading level 1 (Title must be Heading 1)."
+        message = f"Write me a {data['type']} with more than {word_count[data['type']]} words"+f"using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them." if 'keywords' in data else ""+" Headings must start from heading level 1 (Title must be Heading 1)."
         for x in data:
             message+=incLine(x,data[x])
         message+="Don't give me any examples. Better to keep a video or image after title. Should be plagiarism free, each time generating new. Every paragraph should have a minimum of 5 sentences. Don't use any special character or emoji."

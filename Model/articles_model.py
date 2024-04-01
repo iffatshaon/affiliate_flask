@@ -32,7 +32,7 @@ word_count={
 def incLine(key,value):
     inc_line={
         "numFaq":f"Number of FAQs with answers - {value}.",
-        "numImage":f"Add minimum {value} image placeholders with appropriate labels to the images where possible. All images should be different.",
+        "numImage":f"Add minimum {value} image placeholders with appropriate labels to the images where possible in markdown image format, label as the alt. All images should be different.",
         "label":f"There should be a label - {value}.",
         "numSubheading":f"Number of subheadings - {value}.",
         "subheadings":f"The subheadings of the article are - {value}.",

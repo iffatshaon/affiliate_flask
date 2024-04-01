@@ -13,6 +13,7 @@ import jwt
 from googlesearch import search
 from Utils.helpers import checkToken
 from unidecode import unidecode
+import re
 
 word_count={
         "info article":2800, 
@@ -92,8 +93,15 @@ class articles_model:
         # Convert Markdown text to HTML
         html_content = markdown.markdown(markdown_text)
         html_content = html_content.replace("Image Placeholder: ","")
+        soup = BeautifulSoup(html_content, 'html.parser')
+        headers = soup.find_all(re.compile('^h[1-6]$'))  # Find all header tags (h1, h2, ..., h6)
         
-        return html_content
+        if headers:
+            first_header = headers[0]
+            if first_header.name != 'h1':
+                first_header.name = 'h1'
+        
+        return str(soup)
 
     def create_model(self, data, token):
         self.con.reconnect()

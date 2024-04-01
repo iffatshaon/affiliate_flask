@@ -12,6 +12,7 @@ import markdown
 import jwt
 from googlesearch import search
 from Utils.helpers import checkToken
+from unidecode import unidecode
 
 word_count={
         "info article":2800, 
@@ -112,7 +113,7 @@ class articles_model:
         message = f"Write me a {data['type']} with more than {word_count[data['type']]} words using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them. Headings must start from heading level 1 (Title must be Heading 1)."
         for x in data:
             message+=incLine(x,data[x])
-        message+="Don't give me any examples. Better to keep a video or image after title. Should be plagiarism free, each time generating new. Every paragraph should have a minimum of 5 sentences."
+        message+="Don't give me any examples. Better to keep a video or image after title. Should be plagiarism free, each time generating new. Every paragraph should have a minimum of 5 sentences. Don't use any special character or emoji."
         # print(message)
         
         messages = [ {"role": "system", "content":
@@ -168,6 +169,7 @@ class articles_model:
         }
         </style>
         """
+        body_content = unidecode(body_content)
         with open(file_path, 'w') as file:
             file.write(body_content)
         self.cur.execute("INSERT INTO article (id, user, title, link, token_count, prompt) VALUES (%s, %s, %s, %s, %s, %s)",(file_name, id, title, file_path, token_count, str(data)))
@@ -200,8 +202,9 @@ class articles_model:
         if isinstance(id, Response):
             return id
         fileName = 'articles/'+file_id+'.txt'
+        content = unidecode(data['content'])
         with open(fileName, 'w') as file:
-            file.write(data['content'])
+            file.write(content)
             try:
                 self.cur.execute("UPDATE article SET title=%s where id=%s",[data['title'],file_id])
                 return make_response({"result":"Saved successfully"}, 201)

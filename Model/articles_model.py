@@ -55,15 +55,6 @@ class articles_model:
         os.environ["BING_COOKIES"] = "ipv6=hit=1703688473310&t=6; MUID=3DEE40628BB36AB5078C51FD8AB26BCC; SRCHD=AF=ANAB01; SRCHUID=V=2&GUID=58CD49D7CA2F4E4CA2124C4F6EDB19EF&dmnchg=1; MUIDB=3DEE40628BB36AB5078C51FD8AB26BCC; EDGSRVCPERSIST=; USRLOC=HS=1&CLOC=LAT=28.609184542770894|LON=-81.204502638892|A=733.4464586120832|TS=231227134046|SRC=W; SRCHUSR=DOB=20220509&T=1703634516000; _RwBf=ilt=5&ihpd=0&ispd=1&rc=12&rb=0&gb=0&rg=200&pc=12&mtu=0&rbb=0&g=0&cid=&clo=0&v=1&l=2023-12-26T08:00:00.0000000Z&lft=0001-01-01T00:00:00.0000000&aof=0&o=2&p=&c=&t=0&s=0001-01-01T00:00:00.0000000+00:00&ts=2023-12-26T23:48:40.2280687+00:00&rwred=0&r=0&wls=&wlb=&lka=0&lkt=0&TH=&ard=0001-01-01T00:00:00.0000000&wle=&ccp=&aad=0; _EDGE_S=SID=2735D64A6DE7643D2269C5BE6CF065CF; _SS=SID=2735D64A6DE7643D2269C5BE6CF065CF; EDGSRVC=lightschemeovr=displaytheme=edgeservices&EN=language=edgeservices; EDGSRVCSCEN=shell=clientscopes=noheader-coauthor-chat-visibilitypm-udsedgeshop-udsdlpconsent-docvisibility-channelstable&chat=clientscopes=chat-noheader-udsedgeshop-channelstable-udsdlpconsent; SRCHHPGUSR=SRCHLANG=en&BRW=NOTP&BRH=S&CW=540&CH=654&SW=1366&SH=768&DPR=1&UTC=-300&DM=0&EXLTT=5&HV=1703684879&PV=10.0.0&PRVCW=1318&PRVCH=654&WTS=63839281665&IG=2CCFB3A1EAA8458AA8ACFDFDDCDCF64E&SCW=1164&SCH=3722&CIBV=1.1381.12; GC=0yd9NB_jysCRblaZlkZ97FczkFmXfZ-n1Cplxzk20IFJ-jRovNSzTEY8lB1rax8qY3tmq7PbOcNlwHt_B2a_Jw; EDGSRCHHPGUSR=CIBV=1.1381.12&CMUID=3DEE40628BB36AB5078C51FD8AB26BCC; BFBUSR=CMUID=3DEE40628BB36AB5078C51FD8AB26BCC"
         self.client = OpenAI(api_key=os.getenv("GPT_SECRET"))
         self.cur = cursor
-    
-    def checkToken(self,token):
-        if not token:
-            return make_response({"result": "Token not found"}, 401)
-        try:
-            decode = jwt.decode(token,str(os.getenv("SECRET_KEY")),"HS256")
-            return decode['id']
-        except:
-            return make_response({"result": "Token expired"}, 401)
 
     async def getAnswer(e) -> None:
         print(e)
@@ -194,7 +185,7 @@ class articles_model:
                 file_content = file.read()
                 return make_response({"content":file_content,"token_count":result[0]['token_count'],"title":result[0]['title']})
         else:
-            return make_response({"Error":"File not found under this user"},401)
+            return make_response({"Error":"File not found under this user"},400)
 
     def save_model(self, file_id, data, token):
         self.con.reconnect()
@@ -209,7 +200,7 @@ class articles_model:
                 self.cur.execute("UPDATE article SET title=%s where id=%s",[data['title'],file_id])
                 return make_response({"result":"Saved successfully"}, 201)
             except Exception as e:
-                return make_response({"result":"Unable to update", "error":str(e)},401)
+                return make_response({"result":"Unable to update", "error":str(e)},400)
 
     def get_list_model(self,token):
         self.con.reconnect()

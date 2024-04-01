@@ -5,24 +5,16 @@ from wordpress_xmlrpc import Client, WordPressPost
 from wordpress_xmlrpc.methods.posts import NewPost
 import jwt
 import os
+from Utils.helpers import checkToken
 
 class wordpress_model:
     def __init__(self):
         self.con = connection
         self.cur = cursor
     
-    def checkToken(self,token):
-        if not token:
-            return make_response({"result": "Token not found"}, 401)
-        try:
-            decode = jwt.decode(token,str(os.getenv("SECRET_KEY")),"HS256")
-            return decode['id']
-        except:
-            return make_response({"result": "Token expired"}, 401)
-    
     def getall_model(self,token):
         self.con.reconnect()
-        id = self.checkToken(token)
+        id = checkToken(token)
         if isinstance(id, Response):
             return id
         self.cur.execute(f"SELECT * FROM wordpress where id={id}")
@@ -37,7 +29,7 @@ class wordpress_model:
 
     def update_model(self, data, token):
         self.con.reconnect()
-        id = self.checkToken(token)
+        id = checkToken(token)
         if isinstance(id, Response):
             return id
         try:
@@ -51,7 +43,7 @@ class wordpress_model:
     
     def add_model(self,data, token):
         self.con.reconnect()
-        id = self.checkToken(token)
+        id = checkToken(token)
         if isinstance(id, Response):
             return id
         try:
@@ -64,7 +56,7 @@ class wordpress_model:
     
     def delete_model(self, data, token):
         self.con.reconnect()
-        id = self.checkToken(token)
+        id = checkToken(token)
         if isinstance(id, Response):
             return id
         query = f"DELETE FROM wordpress WHERE id={data['id']} AND user={id}"
@@ -78,7 +70,7 @@ class wordpress_model:
     
     def publish_model(self,data, token):
         self.con.reconnect()
-        id = self.checkToken(token)
+        id = checkToken(token)
         if isinstance(id, Response):
             return id
         wordpress_url = data['site']  # Replace with your WordPress site URL

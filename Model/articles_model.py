@@ -43,7 +43,8 @@ def incLine(key,value):
         "minimumPrice":f"The minimum price is {value}.",
         "maximumPrice":f"The maximum price is {value}.",
         "fullContent":f"The full content: {value}",
-        "tone":f"The tone of the article will be {value}"
+        "tone":f"The tone of the article will be {value}",
+        "shortDescription":f"Short description of the blog is: {value}"
         }
     if(key not in inc_line):
         return ""

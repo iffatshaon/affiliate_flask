@@ -220,11 +220,14 @@ class articles_model:
         result = self.cur.fetchall()
         return make_response({"result":result})
     
-    def suggestion_model(self,data):
+    def suggestion_model(self,data, token):
         self.con.reconnect()
+        id = checkToken(token)
+        if isinstance(id, Response):
+            return id
         suggestion_sites = []
         query = ' '.join(data['keywords']) + " suggestions"
-        for url in search(query, num=5, stop=3, pause=2):  # Adjust num and stop as per your requirement
+        for url in search(query, num=5, stop=3, pause=2):
             try:
                 page = requests.get(url)
                 soup = BeautifulSoup(page.content, 'html.parser')
@@ -232,28 +235,7 @@ class articles_model:
                 suggestion_sites.append((title, url))
             except Exception as e:
                 print(f"Error fetching data from {url}: {e}")
-        # url = "https://www.helpscout.com/blog/"
-        # req = requests.get(url)
-        # soup = BeautifulSoup(req.content, 'html.parser')
-        # img_tags = soup.find_all('img')
-        # print(len(img_tags))
-        # print(soup.head.style)
-        # soup.body.append(soup.head.style)
-        # url = "https://api.pexels.com/v1/search"
-        # headers = {
-        #     "Authorization": "thcOL8fAtOCFvyXYov7V6m1QbJn3IulEw1AUnStTPNiYy5rdpzvaCPfF"
-        # }
-        # params = {
-        #     "query": "nature in ice",
-        #     "per_page": 1
-        # }
-        # response = requests.get(url, headers=headers, params=params)
-        # print(response.json()["photos"][0]["src"]["original"])
-        # api_url = f"https://pixabay.com/api/?key={os.getenv('PIXABAY_KEY')}&q=yellow+flowers&image_type=photo&safesearch=true&per_page=4"
-        # response = requests.get(api_url)
-        # print(response.json()["hits"])
-        # self.getImagePixabay("Yellow flower")
-        return make_response({"result":suggestion_sites}) #send_file("text_file_path",mimetype="txt")
+        return make_response({"suggestions":suggestion_sites})
     
     def keyword_model(self, data):
         self.con.reconnect()

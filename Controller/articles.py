@@ -15,7 +15,7 @@ def createfree():
 
 @articles.route("/suggestion", methods=["POST"])
 def suggestion():
-    return model.suggestion_model(request.get_json())
+    return model.suggestion_model(request.get_json(), request.headers.get("Authorization"))
 
 @articles.route("", methods=["GET"])
 def get_list():

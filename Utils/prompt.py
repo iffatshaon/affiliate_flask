@@ -103,6 +103,15 @@ def generateInfoArticle(data):
     html = create_html_document(headings,contents)
     return title,html
 
-    message = f"Give me more than 6 headings on writing an info article on keywords - '{data['keywords']}'. One of the headings must use this direct keyword. Give me only the answer."
-    # messages = getMessage("article",message)
+def generateManualSubheading(data):
+    imageInSingleContent = int(data['imageCount'])/len(headings)
+    wordInSingleContent = 1800/len(data['subheadings'])
+    contents = []
+    for heading in data['subheadings']:
+        content = getContent(data['title'],heading,wordInSingleContent,imageInSingleContent,True)
+        contents.append(content)
+    headings,newContents = checkMissingHeadings(data['subheadings'],data['title'],data['faq'])
+    contents+=newContents
+    html = create_html_document(headings,contents)
+    return data['title'],html
     

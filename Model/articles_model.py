@@ -14,7 +14,7 @@ from googlesearch import search
 from Utils.helpers import checkToken
 from unidecode import unidecode
 import re
-from Utils.prompt import generateInfoArticle
+from Utils.prompt import generateInfoArticle,generateManualSubheading
 
 word_count={
         "info article":2800, 
@@ -37,7 +37,7 @@ def incLine(key,value):
         "numImage":f"Add minimum {value} image placeholders with appropriate labels to the images where possible in markdown image format, label as the alt. All images should be different.",
         "label":f"There should be a label - {value}.",
         "numSubheading":f"Number of subheadings - {value}.",
-        "subheadings":f"The subheadings of the article are - {value}.",
+        "c":f"The subheadings of the article are - {value}.",
         "title":f"The title of the article is {value}.",
         "websiteCategory":f"The category of the website is {value}.",
         "productCategory":f"The category of the product is {value}.",
@@ -181,7 +181,10 @@ class articles_model:
         # print("Hello all")
         # asyncio.run(self.getAnswer())
         try:
-            title,reply = generateInfoArticle(data)
+            if(data['type']=="info article"):
+                title,reply = generateInfoArticle(data)
+            elif(data['type']=="manual sub-heading artilce"):
+                title,reply = generateManualSubheading(data)
             soup = BeautifulSoup(reply, features="html.parser")
             img_tags = soup.find_all('img')
             for img in img_tags:

@@ -14,6 +14,7 @@ from googlesearch import search
 from Utils.helpers import checkToken
 from unidecode import unidecode
 import re
+from Utils.prompt import generateInfoArticle
 
 word_count={
         "info article":2800, 
@@ -178,8 +179,35 @@ class articles_model:
     def free_model(self,data):
         # self.con.reconnect()
         # print("Hello all")
-        asyncio.run(self.getAnswer())
-        return make_response({"result":"Incomplete API"}) #send_file("text_file_path",mimetype="txt")
+        # asyncio.run(self.getAnswer())
+        try:
+            title,reply = generateInfoArticle(data)
+            soup = BeautifulSoup(reply, features="html.parser")
+            img_tags = soup.find_all('img')
+            for img in img_tags:
+                alt_value = img.get('alt', '')
+                try:
+                    resultImage = self.getImagePexels(alt_value) 
+                    img['src'] = resultImage
+                except:
+                    try:
+                        resultImage = self.getImagePixabay(alt_value)
+                    except:
+                        print("Could not find image for:",alt_value)
+            body_content=str(soup)+"""
+            <style>
+            h1{
+            text-align:center;
+            }
+            img{
+            width:100%;
+            }
+            </style>
+            """
+            body_content = unidecode(body_content)
+        except Exception as e:
+            return make_response({"Error":str(e)},400)
+        return make_response({"result":[title,body_content]}) #send_file("text_file_path",mimetype="txt")
     
     def edit_model(self, file_id, token):
         self.con.reconnect()

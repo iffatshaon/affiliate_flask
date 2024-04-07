@@ -15,6 +15,7 @@ from Utils.helpers import checkToken
 from unidecode import unidecode
 import re
 from Utils.prompt import ArticleGenerator
+import mysql.connector
 
 word_count={
         "info article":1800, 
@@ -279,8 +280,6 @@ class articles_model:
         with open(file_path, 'w') as file:
             file.write(body_content)
         self.cur.execute("INSERT INTO article (id, user, title, link, token_count, prompt) VALUES (%s, %s, %s, %s, %s, %s)",(file_name, id, title, file_path, 0, str(data)))
-        # except Exception as e:
-        #     return make_response({"Error":str(e)},400)
         return make_response({"result":[title,body_content]}) #send_file("text_file_path",mimetype="txt")
     
     def edit_model(self, file_id, token):
@@ -312,13 +311,27 @@ class articles_model:
                 return make_response({"result":"Saved successfully"}, 201)
             except Exception as e:
                 return make_response({"result":"Unable to update", "error":str(e)},400)
+            
+    def delete_model(self,id,token):
+        self.con.reconnect()
+        self.con.reconnect()
+        id = checkToken(token)
+        if isinstance(id, Response):
+            return id
+        query = f"DELETE FROM article WHERE id={id}"
+        try:
+            self.cur.execute(query)
+            self.con.commit()
+            return make_response({"result": "Success"}, 200)
+        except mysql.connector.Error as err:
+            return make_response({"result": "Unable to Add","Error":str(err)}, 400)
 
     def get_list_model(self,token):
         self.con.reconnect()
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        self.cur.execute("SELECT * FROM article WHERE user=%s",[id])
+        self.cur.execute("SELECT id,title,wordpress,token_count FROM article WHERE user=%s",[id])
         result = self.cur.fetchall()
         return make_response({"result":result})
     

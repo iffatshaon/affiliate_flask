@@ -13,15 +13,15 @@ def get(site):
 # def getuser(user):
 #     return model.getuser_model(user, request.headers.get('Authorization'))
 
-@sites.route("/wordpress", methods=["PUT"])
+@sites.route("", methods=["PUT"])
 def update():
     return model.update_model(request.get_json(),request.headers.get('Authorization'))
 
-@sites.route("/wordpress", methods=["POST"])
+@sites.route("", methods=["POST"])
 def add():
     return model.add_model(request.get_json(),request.headers.get('Authorization'))
 
-@sites.route("/wordpress", methods=["DELETE"])
+@sites.route("", methods=["DELETE"])
 def delete():
     return model.delete_model(request.get_json(),request.headers.get('Authorization'))
 
@@ -29,6 +29,6 @@ def delete():
 def publish():
     return model.publish_model(request.get_json(),request.headers.get('Authorization'))
 
-@sites.route("/wordpress/category", methods=["POST"])
+@sites.route("/category", methods=["POST"])
 def get_category():
     return model.get_category(request.get_json(), request.headers.get('Authorization'))

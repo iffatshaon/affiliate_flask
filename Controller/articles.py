@@ -26,9 +26,13 @@ def keyword():
     return model.keyword_model(request.get_json())
 
 @articles.route("/<id>", methods=["GET"])
-def edit(id):
+def fetch(id):
     return model.edit_model(id, request.headers.get("Authorization"))
 
 @articles.route("/<id>", methods=["PUT"])
 def save(id):
     return model.save_model(id, request.get_json(), request.headers.get("Authorization"))
+
+@articles.route("/<id>", methods=["DELETE"])
+def delete(id):
+    return model.delete_model(id, request.headers.get("Authorization"))

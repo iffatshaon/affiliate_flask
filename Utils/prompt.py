@@ -36,7 +36,7 @@ class ArticleGenerator:
         if(self.data['numSubheading']=="random"):
             subhead_count = "more than 6"
         else:
-            subhead_count = self.data['subheading']
+            subhead_count = self.data['numSubheading']
         message = f"Give me {subhead_count} headings on writing an info article on keywords - '{self.data['keywords']}' and of title '{self.data['title']}'. One of the headings must use this direct keyword. Give me only the answer."
         headings = self.chat.get_response(self.data['type'], message)
         pattern = re.compile(r'\d+\.\s*|\.$')

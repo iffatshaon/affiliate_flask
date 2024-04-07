@@ -65,7 +65,7 @@ class ArticleGenerator:
         return conclusion
 
     def get_faq(self):
-        message = f"Write a minimum of {self.data['faq']} FAQs of an article with answer whose title is {self.data['title']}. The questions should be bold and answer in normal text in the next line. Don't include any heading (FAQ...) in your answer."
+        message = f"Write a minimum of {self.data['numFaq']} FAQs of an article with answer whose title is {self.data['title']}. The questions should be bold and answer in normal text in the next line. Don't include any heading (FAQ...) in your answer."
         faq = self.chat.get_response(self.data['type'], message)
         return faq
     
@@ -118,7 +118,7 @@ class ArticleGenerator:
             self.data['title'] = self.get_title()
         self.data['subHeadings'] = self.get_headings()
 
-        self.image_in_single_content = int(self.data['imageCount']) / len(self.data['subHeadings'])
+        self.image_in_single_content = int(self.data['numImage']) / len(self.data['subHeadings'])
         self.word_in_single_content = "more than "+str(self.totalWord / len(self.data['subHeadings']))
         self.data['contents'] = self.process_with_threads(True)
         
@@ -127,7 +127,7 @@ class ArticleGenerator:
         return self.data['title'], html
 
     def generate_manual_subheading(self):
-        self.image_in_single_content = int(self.data['imageCount']) / len(self.data['subHeadings'])
+        self.image_in_single_content = int(self.data['numImage']) / len(self.data['subHeadings'])
         self.word_in_single_content = "more than "+str(self.totalWord / len(self.data['subHeadings']))
         self.data['contents'] = self.process_with_threads(True)    
         self.check_missing_headings()
@@ -156,7 +156,7 @@ class ArticleGenerator:
         return self.data['title'], html
     
     def generate_rewrite_content(self):
-        message = f"Rewrite this within {self.totalWord} to {int(self.totalWord)+200} words about this content: {self.data['fullContent']}. The content must contain {self.data['imageCount']} image labels written in markdown image format inside of the content. SHould add {self.data['faq']} at the end. Give me only the answer."
+        message = f"Rewrite this within {self.totalWord} to {int(self.totalWord)+200} words about this content: {self.data['fullContent']}. The content must contain {self.data['numImage']} image labels written in markdown image format inside of the content. SHould add {self.data['numFaq']} at the end. Give me only the answer."
         content = self.chat.get_response(self.data['type'], message)
         title="Rewrite content"
         return title,content

@@ -3,182 +3,188 @@ from openai import OpenAI
 import re
 import markdown
 import concurrent.futures
+from bs4 import BeautifulSoup
 
-client = OpenAI(api_key=os.getenv("GPT_SECRET"))
+class OpenAIChat:
+    def __init__(self):
+        self.client = OpenAI(api_key=os.getenv("GPT_SECRET"))
 
-roles = {
-    "article":"You are a writer"
-}
+    def get_response(self, role, msg):
+        messages = [{"role": "system", "content": roles[role]}]
+        messages.append({"role": "user", "content": msg})
+        chat = self.client.chat.completions.create(model="gpt-3.5-turbo", messages=messages)
+        response = chat.choices[0].message.content
+        return response
 
-def getResponse(role,msg):
-    messages = [ {"role": "system", "content":
-              roles[role]} ]
-    messages.append(
-        {"role": "user", "content": msg},
-    )
-    chat = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=messages
-    )
-    response = chat.choices[0].message.content
-    return response
+class ArticleGenerator:
+    def __init__(self, data, totalWord):
+        self.chat = OpenAIChat()
+        self.data = data
+        self.totalWord = totalWord
+        self.image_in_single_content = 0
+        self.word_in_single_content = 0
+        self.images = ["Example"]
 
-def getTitle(keywords):
-    message = f"Give me a title of an article based on keywords-'{keywords}'. The title must contain the keyword. Give me only the answer."
-    title = getResponse("article",message)
-    if title.startswith(("'", '"')) and title.endswith(("'", '"')):
-        title = title[1:-1]
-    return title
+    def get_title(self):
+        message = f"Give me a title of an article based on keywords-'{self.data['keywords']}'. The title must contain the keyword. Give me only the answer."
+        title = self.chat.get_response(self.data['type'], message)
+        if title.startswith(("'", '"')) and title.endswith(("'", '"')):
+            title = title[1:-1]
+        return title
 
-def getHeadings(title,keywords):
-    message = f"Give me more than 6 headings on writing an info article on keywords - '{keywords}' and of title '{title}'. One of the headings must use this direct keyword. Give me only the answer."
-    headings = getResponse("article",message)
-    pattern = re.compile(r'\d+\.\s*|\.$')
-    result = [pattern.sub('', line) for line in headings.split('\n')]
-    return result
+    def get_headings(self):
+        if(self.data['subheading']=="random"):
+            subhead_count = "more than 6"
+        else:
+            subhead_count = self.data['subheading']
+        message = f"Give me {subhead_count} headings on writing an info article on keywords - '{self.data['keywords']}' and of title '{self.data['title']}'. One of the headings must use this direct keyword. Give me only the answer."
+        headings = self.chat.get_response(self.data['type'], message)
+        pattern = re.compile(r'\d+\.\s*|\.$')
+        result = [pattern.sub('', line) for line in headings.split('\n')]
+        return result
 
-def getContent(title, heading, word_count, image_count, keywords, imaged):
-    message = f"Write a part of a complete article in more than {word_count} words about {heading}. Dont add any introduction or conclusion inthis, only answer about the topic in one or two paragraphs only. For information the title of the article is {title}, don't incluide the title in your answer. The content must have keywords- '{keywords}' once."
-    if imaged:
-        message+=f"Add minimum {image_count} image placeholders with appropriate labels to the images where possible in markdown image format, label as the alt."
-        if image_count>1:
-            message+="All images should be different."
-    content = getResponse("article",message)
-    return content
+    def get_content(self, imaged):
+        message = f"Write a part of a complete article in {self.word_in_single_content} words about {self.data['subheadings']}, don't add any headings in your answer. Don't add any introduction or conclusion in this, only answer about the topic in two or three paragraphs only. For information the title of the article is {self.data['title']}, don't include the title in your answer. The content must have keywords- '{self.data['keywords']}' once."
+        if imaged:
+            # message += f"Add minimum {self.image_in_single_content} image labels in a markdown image format. In the markdown image the appropriate labels should be related to the contents. The labels must point to the specific image and should be kept as alt. The labels should not contain similar to the following: {','.join(self.images)}"
+            message += f"Add minimum {self.image_in_single_content} labels in a markdown image format for image search. In the markdown image the appropriate labels should be related to the contents. The labels must point to the specific image and should be kept as alt. The labels should not contain similar to the following: {','.join(self.images)}"
+            if self.image_in_single_content > 1:
+                message += "All images should be different."
+        content = self.chat.get_response(self.data['type'], message)
+        # print("Content: ",content)
+        content_html = self.markdown_to_html(content)
+        soup = BeautifulSoup(content_html, features="html.parser")
+        img_tags = soup.find_all('img')
+        for x in img_tags:
+            self.images.append(x.get('alt', ''))
+        return content
 
-def getConclusion(headings):
-    message=f"Write a conclusion of an article in more than 300 words whose headings are these - {str(headings)} in only one paragraph. Don't include any heading (Conclusion) in your answer."
-    conclusion = getResponse("article",message)
-    return conclusion
+    def get_conclusion(self):
+        message = f"Write a conclusion of an article in more than 300 words whose headings are these - {str(self.data['subheadings'])} in only one paragraph. Don't include any heading (Conclusion) in your answer. Give me only the answer."
+        conclusion = self.chat.get_response(self.data['type'], message)
+        return conclusion
 
-def getFaq(title, faqCount):
-    message=f"Write a minimum of {faqCount} FAQs of an article with answer whose title is {title}. The questions should be bold and answer in normal text in the next line. Don't include any heading (FAQ...) in your answer."
-    faq = getResponse("article",message)
-    return faq
-
-def checkMissingHeadings(headings,title,faqcount):
-    has_faq = False
-    has_conclusion = False
-    for heading in headings:
-        if "FAQ" in heading or "Frequently Asked Question" in heading:
-            has_faq = True
-        elif "Conclusion" in heading:
-            has_conclusion = True
-    newContents=[]
-    if not has_conclusion:
-        headings.append("Conclusion")
-        newContents.append(getConclusion(headings))
-    if not has_faq:
-        headings.append("FAQ")
-        newContents.append(getFaq(title,faqcount))
-
-    return headings,newContents
-
-def markdown_to_html(markdown_text):
-    html_content = markdown.markdown(markdown_text)
-    html_content = html_content.replace("Image Placeholder: ","")
-    return html_content
-
-def create_html_document(headings, contents):
-    html_content=""
-    for heading, content in zip(headings, contents):
-        html_content += f"<h2>{heading}</h2>\n<p>{markdown_to_html(content)}</p>\n"
-    return html_content
-
-
-def execute_concurrent(data):
-    contents = []
+    def get_faq(self):
+        message = f"Write a minimum of {self.data['faq']} FAQs of an article with answer whose title is {self.data['title']}. The questions should be bold and answer in normal text in the next line. Don't include any heading (FAQ...) in your answer."
+        faq = self.chat.get_response(self.data['type'], message)
+        return faq
     
-    def process_heading(head):
-        return getContent(data[0], head, data[2], data[3], data[4], data[5])
-    
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        # Submit tasks for each heading
-        future_to_heading = {executor.submit(process_heading, heading): heading for heading in data[1]}
+    def get_intro(self):
+        message = f"Write only the introduction for this section within {self.totalWord} to {int(self.totalWord)+200} words about this content: {self.data['fullContent']}. Give me only the answer."
+        intro = self.chat.get_response(self.data['type'], message)
+        return intro
+
+    def check_missing_headings(self):
+        has_faq = False
+        has_conclusion = False
+        for heading in self.data['subheadings']:
+            if "FAQ" in heading or "Frequently Asked Question" in heading:
+                has_faq = True
+            elif "Conclusion" in heading:
+                has_conclusion = True
+        if not has_conclusion:
+            self.data['subheadings'].append("Conclusion")
+            self.data['contents'].append(self.get_conclusion())
+        if not has_faq:
+            self.data['subheadings'].append("FAQ")
+            self.data['contents'].append(self.get_faq())
+
+    def markdown_to_html(self, markdown_text):
+        html_content = markdown.markdown(markdown_text)
+        html_content = html_content.replace("Image Placeholder: ", "")
+        return html_content
+
+    def create_html_document(self):
+        html_content = ""
+        for heading, content in zip(self.data['subheadings'], self.data['contents']):
+            html_content += f"<h2>{heading}</h2>\n<p>{self.markdown_to_html(content)}</p>\n"
+        return html_content
+
+    def process_with_threads(self, imaged):
+        contents = []
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_to_heading = {executor.submit(self.get_content, imaged): heading for heading in self.data['subheadings']}
+            for future in concurrent.futures.as_completed(future_to_heading):
+                heading = future_to_heading[future]
+                try:
+                    content = future.result()
+                    contents.append(content)
+                except Exception as exc:
+                    print(f'Heading {heading} generated an exception: {exc}')
+        return contents
+
+    def generate_info_article(self):
+        if not self.data["title"]:
+            self.data['title'] = self.get_title()
+        self.data['subheadings'] = self.get_headings()
+
+        self.image_in_single_content = int(self.data['imageCount']) / len(self.data['subheadings'])
+        self.word_in_single_content = "more than "+str(self.totalWord / len(self.data['subheadings']))
+        self.data['contents'] = self.process_with_threads(True)
         
-        # Retrieve results as they complete
-        for future in concurrent.futures.as_completed(future_to_heading):
-            heading = future_to_heading[future]
-            try:
-                content = future.result()
-            except Exception as exc:
-                print(f"Error processing {heading}: {exc}")
-            else:
-                contents.append(content)
-    
-    return contents
+        self.check_missing_headings()
+        html = self.create_html_document()
+        return self.data['title'], html
 
-# def generateInfoArticle(data):
-#     title = getTitle(data['keywords'])
-#     if 'headings' not in data:
-#         headings = getHeadings(title,data['keywords'])
-#     else:
-#         headings = data['headings'].split(',')
-#     imageInSingleContent = int(data['imageCount'])/len(headings)
-#     wordInSingleContent = 1800/len(headings)
-#     # con = [title,headings,wordInSingleContent,imageInSingleContent, data['keywords'], True]
-#     contents = []
-#     for heading in headings:
-#         content = getContent(title,heading,wordInSingleContent,imageInSingleContent, data['keywords'], True)
-#         contents.append(content)
-#     # contents = execute_concurrent(con)
-#     print("Got contents:",contents)
-#     headings,newContents = checkMissingHeadings(headings,title,data['faq'])
-#     contents+=newContents
-#     html = create_html_document(headings,contents)
-#     return title,html
+    def generate_manual_subheading(self):
+        self.image_in_single_content = int(self.data['imageCount']) / len(self.data['subheadings'])
+        self.word_in_single_content = "more than "+str(self.totalWord / len(self.data['subheadings']))
+        self.data['contents'] = self.process_with_threads(True)    
+        self.check_missing_headings()
+        html = self.create_html_document()
+        return self.data['title'], html
 
-def generateInfoArticle(data):
-    title = getTitle(data['keywords'])
-    if 'headings' not in data:
-        headings = getHeadings(title, data['keywords'])
-    else:
-        headings = data['headings'].split(',')
-    imageInSingleContent = int(data['imageCount']) / len(headings)
-    wordInSingleContent = 1800 / len(headings)
-    contents = []
-    
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        # Submit tasks to executor
-        future_to_heading = {executor.submit(getContent, title, heading, wordInSingleContent, imageInSingleContent, data['keywords'], True): heading for heading in headings}
-        # Iterate over completed tasks
-        for future in concurrent.futures.as_completed(future_to_heading):
-            heading = future_to_heading[future]
-            try:
-                content = future.result()
-                contents.append(content)
-            except Exception as exc:
-                print(f'Heading {heading} generated an exception: {exc}')
-    
-    # Continue with the rest of the function
-    headings, newContents = checkMissingHeadings(headings, title, data['faq'])
-    contents += newContents
-    html = create_html_document(headings, contents)
-    return title, html
+    def generate_introduction(self):
+        content = self.get_intro()
+        title="Generated Introduction"
+        return title,content
 
-def generateManualSubheading(data):
-    imageInSingleContent = int(data['imageCount'])/len(headings)
-    wordInSingleContent = 1800/len(data['subheadings'])
-    contents = []
-    # for heading in data['subheadings']:
-    #     content = getContent(data['title'],heading,wordInSingleContent,imageInSingleContent,True)
-    #     contents.append(content)
+    def generate_conclusion(self):
+        content = self.get_conclusion()
+        title="Generated Conclusion"
+        return title,content
     
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        # Submit tasks to executor
-        future_to_heading = {executor.submit(getContent, data['title'], heading, wordInSingleContent, imageInSingleContent, data['keywords'], True): heading for heading in data['subheadings']}
-        # Iterate over completed tasks
-        for future in concurrent.futures.as_completed(future_to_heading):
-            heading = future_to_heading[future]
-            try:
-                content = future.result()
-                contents.append(content)
-            except Exception as exc:
-                print(f'Heading {heading} generated an exception: {exc}')
+    def generate_product_content(self):
+        if not self.data["title"]:
+            self.data['title'] = self.get_title()
+        self.data['subheadings'] = ["Product introduction","Product description","FAQ"]
+
+        self.word_in_single_content = self.totalWord / len(self.data['subheadings'])
+        self.data['contents'] = self.process_with_threads(True)
+        
+        html = self.create_html_document()
+        return self.data['title'], html
     
-    # Continue with the rest of the function
-    headings,newContents = checkMissingHeadings(data['subheadings'],data['title'],data['faq'])
-    contents+=newContents
-    html = create_html_document(headings,contents)
-    return data['title'],html
+    def generate_rewrite_content(self):
+        message = f"Rewrite this within {self.totalWord} to {int(self.totalWord)+200} words about this content: {self.data['fullContent']}. The content must contain {self.data['imageCount']} image labels written in markdown image format inside of the content. SHould add {self.data['faq']} at the end. Give me only the answer."
+        content = self.chat.get_response(self.data['type'], message)
+        title="Rewrite content"
+        return title,content
     
+    def generate_blog_outline(self):
+        message = f"Generate a blog outline from this short description: {self.data['shortDescription']} in {self.data['toine']}. The outline must contain these keywords atleast 3 times: {self.data['keywords']}. Give me only the answer."
+        content = self.chat.get_response(self.data['type'], message)
+        title="Blog outline"
+        return title,content
+    
+    def generate_blog_paragraph(self):
+        message = f"Generate a blog single paragraph from this short description: {self.data['shortDescription']} in {self.data['toine']}. The outline must contain these keywords atleast 3 times: {self.data['keywords']}. Give me only the answer."
+        content = self.chat.get_response(self.data['type'], message)
+        title="Blog single paragraph"
+        return title,content
+
+# Sample usage:
+roles = {
+    "info article": "You are a article writer",
+    "manual subheading article":"You are a article content writer",
+    "blog article":"You are a blog writer", 
+    "product category":"You are a product description writer",
+    "amazon review":"You are a amazon product reviewer",
+    "human touch content":"You are a article writer",
+    "content rewrite":"You are a article writer",
+    "generated conclusion":"You are a article writer",
+    "generated introduction":"You are a article writer",
+    "blog article outline":"You are a blog writer",
+    "blog single paragraph":"You are a blog writer"
+
+    }

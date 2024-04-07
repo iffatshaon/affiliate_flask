@@ -224,6 +224,7 @@ class articles_model:
         </style>
         """
         body_content = unidecode(body_content)
+        body_content = body_content.replace("\n", "")
         with open(file_path, 'w') as file:
             file.write(body_content)
         self.cur.execute("INSERT INTO article (id, user, title, link, token_count, prompt) VALUES (%s, %s, %s, %s, %s, %s)",(file_name, id, title, file_path, 0, str(data)))

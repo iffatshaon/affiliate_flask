@@ -28,3 +28,7 @@ def delete():
 @sites.route("/publish", methods=["POST"])
 def publish():
     return model.publish_model(request.get_json(),request.headers.get('Authorization'))
+
+@sites.route("/wordpress/category", methods=["POST"])
+def get_category():
+    return model.get_category(request.get_json(), request.headers.get('Authorization'))

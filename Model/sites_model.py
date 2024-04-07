@@ -3,7 +3,13 @@ from flask import make_response, Response
 import mysql.connector
 from wordpress_xmlrpc import Client, WordPressPost
 from wordpress_xmlrpc.methods.posts import NewPost
+from wordpress_xmlrpc.methods.posts import GetPosts
+from wordpress_xmlrpc.methods.posts import GetPostTypes
+from wordpress_xmlrpc.methods.taxonomies import GetTerms
 from Utils.helpers import checkToken
+
+import collections
+collections.Iterable = collections.abc.Iterable
 
 class sites_model:
     def __init__(self):
@@ -65,7 +71,7 @@ class sites_model:
             print("Error:", err)
             return make_response({"result": "Unable to Add", "error":err}, 400)
     
-    def publish_model(self,data, token):
+    def publish_model(self, data, token):
         self.con.reconnect()
         id = checkToken(token)
         if isinstance(id, Response):
@@ -87,3 +93,17 @@ class sites_model:
             return make_response({"result": "Article posted successfully! Post ID: "+post_id}, 200)
         except Exception as err:
             return make_response({"result":"Unable to publish", "error":str(err)},400)
+    
+    def get_category(self, data, token):
+        id = checkToken(token)
+        if isinstance(id, Response):
+            return id
+        wordpress_url = data['site']
+        wordpress_username = data['username']
+        wordpress_password = data['password']
+
+        client = Client(wordpress_url, wordpress_username, wordpress_password)
+        categories = client.call(GetTerms('category'))
+        category_names = [category.name for category in categories]
+
+        return make_response({"categories":category_names},200)

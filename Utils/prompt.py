@@ -33,7 +33,7 @@ class ArticleGenerator:
         return title
 
     def get_headings(self):
-        if(self.data['subheading']=="random"):
+        if(self.data['numSubheading']=="random"):
             subhead_count = "more than 6"
         else:
             subhead_count = self.data['subheading']
@@ -44,7 +44,7 @@ class ArticleGenerator:
         return result
 
     def get_content(self, imaged):
-        message = f"Write a part of a complete article in {self.word_in_single_content} words about {self.data['subheadings']}, don't add any headings in your answer. Don't add any introduction or conclusion in this, only answer about the topic in two or three paragraphs only. For information the title of the article is {self.data['title']}, don't include the title in your answer. The content must have keywords- '{self.data['keywords']}' once."
+        message = f"Write a part of a complete article in {self.word_in_single_content} words about {self.data['subHeadings']}, don't add any headings in your answer. Don't add any introduction or conclusion in this, only answer about the topic in two or three paragraphs only. For information the title of the article is {self.data['title']}, don't include the title in your answer. The content must have keywords- '{self.data['keywords']}' once."
         if imaged:
             # message += f"Add minimum {self.image_in_single_content} image labels in a markdown image format. In the markdown image the appropriate labels should be related to the contents. The labels must point to the specific image and should be kept as alt. The labels should not contain similar to the following: {','.join(self.images)}"
             message += f"Add minimum {self.image_in_single_content} labels in a markdown image format for image search. In the markdown image the appropriate labels should be related to the contents. The labels must point to the specific image and should be kept as alt. The labels should not contain similar to the following: {','.join(self.images)}"
@@ -60,7 +60,7 @@ class ArticleGenerator:
         return content
 
     def get_conclusion(self):
-        message = f"Write a conclusion of an article in more than 300 words whose headings are these - {str(self.data['subheadings'])} in only one paragraph. Don't include any heading (Conclusion) in your answer. Give me only the answer."
+        message = f"Write a conclusion of an article in more than 300 words whose headings are these - {str(self.data['subHeadings'])} in only one paragraph. Don't include any heading (Conclusion) in your answer. Give me only the answer."
         conclusion = self.chat.get_response(self.data['type'], message)
         return conclusion
 
@@ -77,16 +77,16 @@ class ArticleGenerator:
     def check_missing_headings(self):
         has_faq = False
         has_conclusion = False
-        for heading in self.data['subheadings']:
+        for heading in self.data['subHeadings']:
             if "FAQ" in heading or "Frequently Asked Question" in heading:
                 has_faq = True
             elif "Conclusion" in heading:
                 has_conclusion = True
         if not has_conclusion:
-            self.data['subheadings'].append("Conclusion")
+            self.data['subHeadings'].append("Conclusion")
             self.data['contents'].append(self.get_conclusion())
         if not has_faq:
-            self.data['subheadings'].append("FAQ")
+            self.data['subHeadings'].append("FAQ")
             self.data['contents'].append(self.get_faq())
 
     def markdown_to_html(self, markdown_text):
@@ -96,14 +96,14 @@ class ArticleGenerator:
 
     def create_html_document(self):
         html_content = ""
-        for heading, content in zip(self.data['subheadings'], self.data['contents']):
+        for heading, content in zip(self.data['subHeadings'], self.data['contents']):
             html_content += f"<h2>{heading}</h2>\n<p>{self.markdown_to_html(content)}</p>\n"
         return html_content
 
     def process_with_threads(self, imaged):
         contents = []
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_to_heading = {executor.submit(self.get_content, imaged): heading for heading in self.data['subheadings']}
+            future_to_heading = {executor.submit(self.get_content, imaged): heading for heading in self.data['subHeadings']}
             for future in concurrent.futures.as_completed(future_to_heading):
                 heading = future_to_heading[future]
                 try:
@@ -116,10 +116,10 @@ class ArticleGenerator:
     def generate_info_article(self):
         if not self.data["title"]:
             self.data['title'] = self.get_title()
-        self.data['subheadings'] = self.get_headings()
+        self.data['subHeadings'] = self.get_headings()
 
-        self.image_in_single_content = int(self.data['imageCount']) / len(self.data['subheadings'])
-        self.word_in_single_content = "more than "+str(self.totalWord / len(self.data['subheadings']))
+        self.image_in_single_content = int(self.data['imageCount']) / len(self.data['subHeadings'])
+        self.word_in_single_content = "more than "+str(self.totalWord / len(self.data['subHeadings']))
         self.data['contents'] = self.process_with_threads(True)
         
         self.check_missing_headings()
@@ -127,8 +127,8 @@ class ArticleGenerator:
         return self.data['title'], html
 
     def generate_manual_subheading(self):
-        self.image_in_single_content = int(self.data['imageCount']) / len(self.data['subheadings'])
-        self.word_in_single_content = "more than "+str(self.totalWord / len(self.data['subheadings']))
+        self.image_in_single_content = int(self.data['imageCount']) / len(self.data['subHeadings'])
+        self.word_in_single_content = "more than "+str(self.totalWord / len(self.data['subHeadings']))
         self.data['contents'] = self.process_with_threads(True)    
         self.check_missing_headings()
         html = self.create_html_document()
@@ -147,9 +147,9 @@ class ArticleGenerator:
     def generate_product_content(self):
         if not self.data["title"]:
             self.data['title'] = self.get_title()
-        self.data['subheadings'] = ["Product introduction","Product description","FAQ"]
+        self.data['subHeadings'] = ["Product introduction","Product description","FAQ"]
 
-        self.word_in_single_content = self.totalWord / len(self.data['subheadings'])
+        self.word_in_single_content = self.totalWord / len(self.data['subHeadings'])
         self.data['contents'] = self.process_with_threads(True)
         
         html = self.create_html_document()

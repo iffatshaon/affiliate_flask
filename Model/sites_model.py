@@ -23,13 +23,13 @@ class sites_model:
             return id
         self.cur.execute(f"SELECT * FROM wordpress where user={id}")
         result = self.cur.fetchall()
-        return make_response({"result":result})
+        return make_response({"sites":result})
 
     def getuser_model(self,user):
         self.con.reconnect()
         self.cur.execute(f"SELECT * FROM wordpress where user={user}")
         result = self.cur.fetchall()
-        return make_response({"result":result})
+        return make_response({"sites":result})
 
     def update_model(self, data, token):
         self.con.reconnect()
@@ -37,10 +37,10 @@ class sites_model:
         if isinstance(id, Response):
             return id
         try:
-            self.cur.execute("UPDATE wordpress SET site=%s, username=%s, password=%s WHERE id=%s AND user=%s",
-                             (data['site'], data['username'], data['password'], data['id'], id))
+            self.cur.execute("UPDATE wordpress SET site=%s, username=%s, WHERE id=%s AND user=%s",
+                             (data['site'], data['username'], data['id'], id))
             
-            return make_response({"result": data}, 200)
+            return make_response(data, 200)
         except mysql.connector.Error as err:
             return make_response({"result": "Unable to Update","error":err}, 400)
     
@@ -51,8 +51,8 @@ class sites_model:
             return id
         try:
             self.cur.execute("INSERT INTO wordpress (site, username, password, user) VALUES (%s, %s, %s, %s)",
-                             (data['site'], data['username'], data['password'], str(id)))
-            return make_response({"result": data}, 201)
+                             (data['site'], data['username'], "", str(id)))
+            return make_response(data, 201)
         except mysql.connector.Error as err:
             print("Error:", err)
             return make_response({"result": "Unable to Add","error":err}, 400)
@@ -66,7 +66,7 @@ class sites_model:
         try:
             self.cur.execute(query)
             self.con.commit()
-            return make_response({"result": data}, 200)
+            return make_response({data}, 200)
         except mysql.connector.Error as err:
             print("Error:", err)
             return make_response({"result": "Unable to Add", "error":err}, 400)

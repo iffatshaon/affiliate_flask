@@ -21,24 +21,30 @@ class sites_model:
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        self.cur.execute(f"SELECT * FROM wordpress where user={id}")
+        print("The type:",site)
+        if site:
+            query = f"SELECT * FROM sites where user={id} and type='{site}'"
+        else:
+            query = f"SELECT * FROM sites where user={id}"
+        print(query)
+        self.cur.execute(query)
         result = self.cur.fetchall()
         return make_response({"sites":result})
 
     def getuser_model(self,user):
         self.con.reconnect()
-        self.cur.execute(f"SELECT * FROM wordpress where user={user}")
+        self.cur.execute(f"SELECT * FROM sites where user={user}")
         result = self.cur.fetchall()
         return make_response({"sites":result})
 
-    def update_model(self, data, token):
+    def update_model(self, sid, data, token):
         self.con.reconnect()
         id = checkToken(token)
         if isinstance(id, Response):
             return id
         try:
-            self.cur.execute("UPDATE wordpress SET site=%s, username=%s WHERE id=%s AND user=%s",
-                             (data['site'], data['username'], data['id'], id))
+            self.cur.execute("UPDATE sites SET site=%s, username=%s WHERE id=%s AND user=%s",
+                             (data['site'], data['username'], sid, id))
             
             return make_response(data, 200)
         except mysql.connector.Error as err:
@@ -50,23 +56,23 @@ class sites_model:
         if isinstance(id, Response):
             return id
         try:
-            self.cur.execute("INSERT INTO wordpress (site, username, password, user) VALUES (%s, %s, %s, %s)",
-                             (data['site'], data['username'], "", str(id)))
+            self.cur.execute("INSERT INTO sites (site, username, type, user) VALUES (%s, %s, %s, %s)",
+                             (data['site'], data['username'], data['type'], str(id)))
             return make_response(data, 201)
         except mysql.connector.Error as err:
             print("Error:", err)
             return make_response({"result": "Unable to Add","error":err}, 400)
     
-    def delete_model(self, data, token):
+    def delete_model(self, sid, token):
         self.con.reconnect()
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        query = f"DELETE FROM wordpress WHERE id={data['id']} AND user={id}"
+        query = f"DELETE FROM sites WHERE id={sid} AND user={id}"
         try:
             self.cur.execute(query)
             self.con.commit()
-            return make_response(data, 200)
+            return make_response(sid, 200)
         except mysql.connector.Error as err:
             print("Error:", err)
             return make_response({"result": "Unable to Add", "error":err}, 400)

@@ -37,12 +37,12 @@ class sites_model:
         if isinstance(id, Response):
             return id
         try:
-            self.cur.execute("UPDATE wordpress SET site=%s, username=%s, WHERE id=%s AND user=%s",
+            self.cur.execute("UPDATE wordpress SET site=%s, username=%s WHERE id=%s AND user=%s",
                              (data['site'], data['username'], data['id'], id))
             
             return make_response(data, 200)
         except mysql.connector.Error as err:
-            return make_response({"result": "Unable to Update","error":err}, 400)
+            return make_response({"result": "Unable to Update","error":str(err)}, 400)
     
     def add_model(self,data, token):
         self.con.reconnect()
@@ -66,7 +66,7 @@ class sites_model:
         try:
             self.cur.execute(query)
             self.con.commit()
-            return make_response({data}, 200)
+            return make_response(data, 200)
         except mysql.connector.Error as err:
             print("Error:", err)
             return make_response({"result": "Unable to Add", "error":err}, 400)

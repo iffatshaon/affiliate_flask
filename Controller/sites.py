@@ -5,7 +5,7 @@ model = sites_model()
 
 sites = Blueprint("sites_blueprint",__name__)
 
-@sites.route("/", methods=["GET"])
+@sites.route("", methods=["GET"])
 def get():
     type = request.args.get('type')
     return model.getall_model(type, request.headers.get('Authorization'))

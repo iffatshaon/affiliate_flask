@@ -72,7 +72,7 @@ class sites_model:
         try:
             self.cur.execute(query)
             self.con.commit()
-            return make_response(sid, 200)
+            return make_response(sid, 201)
         except mysql.connector.Error as err:
             print("Error:", err)
             return make_response({"result": "Unable to Add", "error":err}, 400)

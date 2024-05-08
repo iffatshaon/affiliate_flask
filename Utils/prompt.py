@@ -136,12 +136,14 @@ class ArticleGenerator:
 
     def generate_introduction(self):
         content = self.get_intro()
-        title="Generated Introduction"
+        words = content.split()
+        title = ' '.join(words[:6])
         return title,content
 
     def generate_conclusion(self):
         content = self.get_conclusion()
-        title="Generated Conclusion"
+        words = content.split()
+        title = ' '.join(words[:6])
         return title,content
     
     def generate_product_content(self):

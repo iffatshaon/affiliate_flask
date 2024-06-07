@@ -7,6 +7,7 @@ from wordpress_xmlrpc.methods.posts import GetPosts
 from wordpress_xmlrpc.methods.posts import GetPostTypes
 from wordpress_xmlrpc.methods.taxonomies import GetTerms
 from Utils.helpers import checkToken
+from Model.articles_model import fetch_article
 
 import collections
 collections.Iterable = collections.abc.Iterable
@@ -21,12 +22,10 @@ class sites_model:
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        print("The type:",site)
         if site:
             query = f"SELECT * FROM sites where user={id} and type='{site}'"
         else:
             query = f"SELECT * FROM sites where user={id}"
-        print(query)
         self.cur.execute(query)
         result = self.cur.fetchall()
         return make_response({"sites":result})
@@ -82,15 +81,25 @@ class sites_model:
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        wordpress_url = data['site']
-        wordpress_username = data['username']
+        
+        query = f"SELECT * FROM sites where id={data['site_id']}"
+        self.cur.execute(query)
+        result = self.cur.fetchall()
+        
+        wordpress_url = result[0]['site']
+        wordpress_username = result[0]['username']
         wordpress_password = data['password']
 
         client = Client(wordpress_url, wordpress_username, wordpress_password)
 
+        
+        query = f"SELECT * from article where id={data['article_id']}"
+        self.cur.execute(query)
+        result = self.cur.fetchall()
+
         post = WordPressPost()
-        post.title = data['title']
-        post.content = data['content']
+        post.title = result[0]['title']
+        post.content = fetch_article(result[0]['link'])
         
         try:
             post_id = client.call(NewPost(post))

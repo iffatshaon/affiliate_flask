@@ -17,6 +17,9 @@ import re
 from Utils.prompt import ArticleGenerator
 import mysql.connector
 
+api_key = 'AIzaSyCPHUGkoMq-Z7qO3nUDTDBrz1erVmSPm3M'
+cse_id = '124161338f8724c47'
+
 word_count={
         "info article":1800, 
         "blog article":1800, 
@@ -52,6 +55,11 @@ def incLine(key,value):
     if(key not in inc_line):
         return ""
     return inc_line[key]
+
+def fetch_article(fileName):
+    with open(fileName, 'r') as file:
+        file_content = file.read()
+        return file_content
 
 class articles_model:
     def __init__(self):
@@ -90,6 +98,22 @@ class articles_model:
         }
         response = requests.get(url, headers=headers, params=params)
         return response.json()["photos"][0]["src"]["original"]
+    
+    def getImageGoogle(search_term, num=10):
+        url = "https://www.googleapis.com/customsearch/v1"
+        params = {
+            "q": search_term,
+            "cx": cse_id,
+            "key": api_key,
+            "searchType": "image",
+            "num": num,
+            "fileType": "jpg|png",
+            "rights": "cc_publicdomain|cc_attribute|cc_sharealike|cc_noncommercial|cc_nonderived"
+        }
+        response = requests.get(url, params=params)
+        result = response.json()
+        images = [item['link'] for item in result.get('items', [])]
+        return images[0]
 
     def markdown_to_html(self, markdown_text):
         # Convert Markdown text to HTML
@@ -205,15 +229,19 @@ class articles_model:
         soup = BeautifulSoup(reply, features="html.parser")
         img_tags = soup.find_all('img')
         for img in img_tags:
-            alt_value = img.get('alt', '')
+            alt_value = img.get('alt', '').split(':')[-1]
             try:
-                resultImage = self.getImagePexels(alt_value) 
+                resultImage = self.getImageGoogle(alt_value)
                 img['src'] = resultImage
             except:
                 try:
-                    resultImage = self.getImagePixabay(alt_value)
+                    resultImage = self.getImagePexels(alt_value)
+                    img['src'] = resultImage
                 except:
-                    print("Could not find image for:",alt_value)
+                    try:
+                        resultImage = self.getImagePixabay(alt_value)
+                    except:
+                        print("Could not find image for:",alt_value)
         body_content=str(soup)+"""
         <style>
         h1{
@@ -281,7 +309,7 @@ class articles_model:
             file.write(body_content)
         self.cur.execute("INSERT INTO article (id, user, title, link, token_count, prompt) VALUES (%s, %s, %s, %s, %s, %s)",(file_name, id, title, file_path, 0, str(data)))
         return make_response({"result":[title,body_content]}) #send_file("text_file_path",mimetype="txt")
-    
+
     def edit_model(self, file_id, token):
         self.con.reconnect()
         id = checkToken(token)
@@ -291,9 +319,8 @@ class articles_model:
         result = self.cur.fetchall()
         if(len(result)>0):
             fileName = 'articles/'+file_id+'.txt'
-            with open(fileName, 'r') as file:
-                file_content = file.read()
-                return make_response({"content":file_content,"token_count":result[0]['token_count'],"title":result[0]['title']})
+            file_content = fetch_article(fileName)
+            return make_response({"content":file_content,"token_count":result[0]['token_count'],"title":result[0]['title']})
         else:
             return make_response({"Error":"File not found under this user"},400)
 
@@ -331,7 +358,7 @@ class articles_model:
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        self.cur.execute("SELECT id,title,wordpress,token_count FROM article WHERE user=%s",[id])
+        self.cur.execute("SELECT id,title,wordpress,token_count FROM article WHERE user=%s ORDER BY id DESC",[id])
         result = self.cur.fetchall()
         return make_response({"result":result})
     

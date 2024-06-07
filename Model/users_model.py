@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 import os
 import datetime
 import jwt
+from PIL import Image
 from Utils.helpers import checkAdmin,checkToken, entries
 
 captcha = captcha_model()
@@ -73,7 +74,9 @@ class users_model():
                 return make_response({"result":"Email and/or Mobile number has already been used"},409)
             else:
                 try:
-                    self.cur.execute(f"INSERT INTO users(name,mobile,username,email,password,confirm) VALUES('{data['name']}','{data['mobile']}','{data['username']}','{data['email']}','{password}','{confirm_hash}')")
+                    if 'profile' not in data:
+                        data['profile']='profiles/default.png'
+                    self.cur.execute(f"INSERT INTO users(name,mobile,username,email,password,confirm,image) VALUES('{data['name']}','{data['mobile']}','{data['username']}','{data['email']}','{password}','{confirm_hash}','{data['profile']}')")
                     subject = "Welcome to Faisalitab AI"
                     with open("./Utils/activation.html", "r") as file:
                         message = file.read()
@@ -106,16 +109,21 @@ class users_model():
         id_check = checkToken(token)
         if isinstance(id_check, Response):
             return id_check
-        self.cur.execute(f"SELECT id,name,mobile,username,email FROM users where id={id_check}")
+        self.cur.execute(f"SELECT id,name,mobile,username,email, token, image, package FROM users where id={id_check}")
         result = self.cur.fetchall()
         if len(result)>0:
             return make_response(result[0])
         else:
             return make_response({"result":"No data"},204)
 
-    def get_single_user_model(self,id,token):
+    def get_single_user_model(self,id_input,token):
         self.con.reconnect()
-        self.cur.execute(f"SELECT * FROM users where id={id}")
+        id = checkToken(token)
+        if isinstance(id, Response):
+            return id
+        if not (int(id_input)==int(id) or checkAdmin(id)):
+            return make_response({"result":"Unauthorized access"}, 401)
+        self.cur.execute(f"SELECT id,name,mobile,username,email, token, image, package FROM users where id={id}")
         result = self.cur.fetchall()
         if len(result)>0:
             return make_response({"result":result})
@@ -152,6 +160,113 @@ class users_model():
             return make_response({"result":data},201)
         else:
             return make_response({"result":"Nothing to update"},204)
+        
+    def changePassword_model(self,data, id_input, token):
+        self.con.reconnect()
+        id = checkToken(token)
+        if isinstance(id, Response):
+            return id
+        if not (int(id_input)==int(id)):
+            return make_response({"result":"Unauthorized access"}, 401)
+        self.cur.execute(f"SELECT password FROM users WHERE id='{id}'")
+        result = self.cur.fetchall()
+        if(len(result)>0):
+            if bcrypt.checkpw(data['password'].encode('utf-8'), result[0]["password"].encode('utf-8')):
+                print("Hurra!! Password matched")
+                if data['newPassword'] == data['confirmPassword']:
+                    print("Hurra!! They are the same")
+                    sql = f"UPDATE users SET password='{self.encrypt(data['newPassword'])}'"
+                    self.cur.execute(sql)
+                    return make_response({"result":"Passwords changed successfully"})
+                else:
+                    return make_response({"result":"Passwords didn't match"},201)
+            else:
+                return make_response({"result":"Invalid current password"},201)
+        else:
+            return make_response({"result":"User not found"},201)
+        
+    def forgotPassword_model(self, data, id_input, token):
+        self.con.reconnect()
+        id = checkToken(token)
+        if isinstance(id, Response):
+            return id
+        if not (int(id_input)==int(id)):
+            return make_response({"result":"Unauthorized access"}, 401)
+        # confirm_hash = generate_random_string()
+        # subject = "Welcome to Faisalitab AI"
+        # with open("./Utils/activation.html", "r") as file:
+        #     message = file.read()
+        # soup = BeautifulSoup(message,"html.parser")
+        # a_tag = soup.find('a')
+        # a_tag["href"]="https://faisaliteb.ai/confirm-mail/"+confirm_hash
+        # send_email(data["email"], subject, str(soup))
+    
+    def resetPassword_model(self, data, id_input, token):
+        self.con.reconnect()
+        id = checkToken(token)
+        if isinstance(id, Response):
+            return id
+        if not (int(id_input)==int(id)):
+            return make_response({"result":"Unauthorized access"}, 401)
+    
+    def get_image(self,path):
+        with open(path, 'r') as file:
+            file_content = file.read()
+            return file_content
+
+    def fetch_profile_pic(self, id_d, token):
+        self.con.reconnect()
+        id = checkToken(token)
+        if isinstance(id, Response):
+            return id
+        if not (int(id_d)==int(id) or checkAdmin(id)):
+            return make_response({"result":"Unauthorized access"}, 401)
+        self.cur.execute("SELECT image from users where id=%s",[id])
+        result = self.cur.fetchall()
+        if(len(result)>0):
+            image_path = result[0]['image']
+            with open(image_path, 'rb') as file:
+                image_content = file.read()
+            headers = {"Content-disposition": "attachment; filename=profile.png"}
+            mimetype = "image/png"
+            return Response(image_content, mimetype=mimetype, headers=headers)
+        else:
+            return make_response({"Error":"File not found under this user"},400)
+
+    def convert_to_png(self,path,image):
+        temp_path = image.filename
+        image.save(temp_path)
+        img = Image.open(temp_path)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        img = img.save(path, format='PNG')
+        os.remove(temp_path)
+
+    def save_profile_pic(self, id_d, data, token):
+        self.con.reconnect()
+        id = checkToken(token)
+        if isinstance(id, Response):
+            return id
+        if not (int(id_d) == int(id) or checkAdmin(id)):
+            return make_response({"result": "Unauthorized access"}, 401)
+
+        if 'profile' not in data:
+            return make_response({"result": "No profile picture found in the request"}, 400)
+        profile_image = data['profile']
+
+        if profile_image.filename == '':
+            return make_response({"result": "No selected file"}, 400)
+
+        if profile_image:
+            file_path = f"profiles/{id}.png"
+
+            self.convert_to_png(file_path,profile_image)
+            self.cur.execute(f"UPDATE users set image='{file_path}' where id='{id}'")
+
+            return make_response({"result": "Profile picture saved successfully"}, 200)
+        else:
+            return make_response({"result": "No profile picture data found in the request"}, 400)
+
     
     def renew_token(self,id,data):
         try:

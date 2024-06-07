@@ -47,7 +47,7 @@ class ArticleGenerator:
         message = f"Write a part of a complete article in {self.word_in_single_content} words about {self.data['subHeadings']}, don't add any headings in your answer. Don't add any introduction or conclusion in this, only answer about the topic in two or three paragraphs only. For information the title of the article is {self.data['title']}, don't include the title in your answer. The content must have keywords- '{self.data['keywords']}' once."
         if imaged:
             # message += f"Add minimum {self.image_in_single_content} image labels in a markdown image format. In the markdown image the appropriate labels should be related to the contents. The labels must point to the specific image and should be kept as alt. The labels should not contain similar to the following: {','.join(self.images)}"
-            message += f"Add minimum {self.image_in_single_content} labels in a markdown image format for image search. In the markdown image the appropriate labels should be related to the contents. The labels must point to the specific image and should be kept as alt. The labels should not contain similar to the following: {','.join(self.images)}"
+            message += f"Add minimum {self.image_in_single_content} figure captions in a markdown image format for image search. The captions must point to the specific image related to the content and should be kept as alt. The captions should not contain similar to the following: {','.join(self.images)}"
             if self.image_in_single_content > 1:
                 message += "All images should be different."
         content = self.chat.get_response(self.data['type'], message)

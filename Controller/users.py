@@ -41,6 +41,18 @@ def getSingleUSer(id):
 def updateUser(id):
     return model.updateUser_model(request.get_json(), id, request.headers.get('Authorization'))
 
+@users.route("/<id>/password", methods=["PUT"])
+def changePassword_model(id):
+    return model.changePassword_model(request.get_json(), id, request.headers.get('Authorization'))
+
+@users.route("/<id>/password/forgot", methods=["PUT"])
+def forgotPassword_model(id):
+    return model.forgotPassword_model(request.get_json(), id, request.headers.get('Authorization'))
+
+@users.route("/<id>/password/reset", methods=["PUT"])
+def resetPassword_model(id):
+    return model.resetPassword_model(request.get_json(), id, request.headers.get('Authorization'))
+
 @users.route("/<id>", methods=["DELETE"])
 def deleteUser(id):
     return model.delete_model(id, request.headers.get("Authorization"))
@@ -48,3 +60,11 @@ def deleteUser(id):
 @users.route("/logout")
 def logout():
     return model.logout_model(request.headers.get("Authorization"))
+
+@users.route("/<id>/pic")
+def fetch_profile_pic(id):
+    return model.fetch_profile_pic(id, request.headers.get("Authorization"))
+
+@users.route("/<id>/pic",methods=['POST'])
+def save_profile_pic(id):
+    return model.save_profile_pic(id, request.files, request.headers.get("Authorization"))

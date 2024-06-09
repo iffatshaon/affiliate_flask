@@ -5,7 +5,7 @@ from wordpress_xmlrpc import Client, WordPressPost
 from wordpress_xmlrpc.methods.posts import NewPost
 from wordpress_xmlrpc.methods.posts import GetPosts
 from wordpress_xmlrpc.methods.posts import GetPostTypes
-from wordpress_xmlrpc.methods.taxonomies import GetTerms
+from wordpress_xmlrpc.methods.taxonomies import GetTerms,GetTerm
 from Utils.helpers import checkToken
 from Model.articles_model import fetch_article
 
@@ -100,7 +100,12 @@ class sites_model:
         post = WordPressPost()
         post.title = result[0]['title']
         post.content = fetch_article(result[0]['link'])
-        
+        if "category" in data:
+            post.terms = []
+            for cats in client.call(GetTerms('category')):
+                if cats.id in data["category"]:
+                    post.terms.append(cats)
+            post.post_status = 'publish'
         try:
             post_id = client.call(NewPost(post))
             sql = f"UPDATE article SET wordpress=1 WHERE id={id}"
@@ -119,6 +124,8 @@ class sites_model:
 
         client = Client(wordpress_url, wordpress_username, wordpress_password)
         categories = client.call(GetTerms('category'))
-        category_names = [category.name for category in categories]
+        for cat in categories:
+            print(cat.id)
+        category_names = {category.id:category.name for category in categories}
 
         return make_response({"categories":category_names},200)

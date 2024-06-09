@@ -208,6 +208,8 @@ class users_model():
 
     def resetPassword_model(self, data):
         self.con.reconnect()
+        if data['hash'] not in forgot_hash:
+            return make_response({"result":"Invalid URL"},400)
         if data['newPassword'] == data['confirmPassword']:
             sql = f"UPDATE users SET password='{self.encrypt(data['newPassword'])}' WHERE id='{forgot_hash[data['hash']]}'"
             self.cur.execute(sql)

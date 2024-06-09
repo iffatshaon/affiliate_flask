@@ -45,9 +45,9 @@ def addOffer():
 def getCoupons():
     return model.get_coupons()
 
-@price.route("/coupon", methods=["PUT"])
+@price.route("/coupon", methods=["GET"])
 def getCouponPrice():
-    return model.get_coupon_price(request.get_json())
+    return model.get_coupon_price(request.args)
 
 @price.route("/coupon", methods=["POST"])
 def addcoupon():

@@ -132,15 +132,17 @@ class users_model():
         else:
             return make_response({"result":"No data"},204)
     
-    def remainingtoken_model(self,token):
+    def remainingtoken_model(self,id_input,token):
         self.con.reconnect()
         id = checkToken(token)
         if isinstance(id, Response):
             return id
+        if int(id_input) != int(id):
+            return make_response({"result":"Invalid Access"},400)
         self.cur.execute("SELECT token FROM users where id=%s",[id])
         result = self.cur.fetchall()
         if len(result)>0:
-            return make_response({"result":result})
+            return make_response({"result":result[0]})
         else:
             return make_response({"result":"No data"},204)
     

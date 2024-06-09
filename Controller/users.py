@@ -21,9 +21,9 @@ def allusers():
 def personal():
     return model.get_personal_model(request.headers.get('Authorization'))
 
-@users.route("/token")
-def tokens():
-    return model.remainingtoken_model(request.headers.get('Authorization'))
+@users.route("/<id>/token")
+def tokens(id):
+    return model.remainingtoken_model(id,request.headers.get('Authorization'))
 
 @users.route("/<id>/renew", methods=["PUT"])
 def renew(id):

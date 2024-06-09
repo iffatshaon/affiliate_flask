@@ -45,13 +45,13 @@ def updateUser(id):
 def changePassword_model(id):
     return model.changePassword_model(request.get_json(), id, request.headers.get('Authorization'))
 
-@users.route("/<id>/password/forgot", methods=["PUT"])
-def forgotPassword_model(id):
-    return model.forgotPassword_model(request.get_json(), id, request.headers.get('Authorization'))
+@users.route("/password/forgot", methods=["POST"])
+def forgotPassword_model():
+    return model.forgotPassword_model(request.get_json())
 
-@users.route("/<id>/password/reset", methods=["PUT"])
-def resetPassword_model(id):
-    return model.resetPassword_model(request.get_json(), id, request.headers.get('Authorization'))
+@users.route("/password/reset", methods=["PUT"])
+def resetPassword_model():
+    return model.resetPassword_model(request.get_json())
 
 @users.route("/<id>", methods=["DELETE"])
 def deleteUser(id):

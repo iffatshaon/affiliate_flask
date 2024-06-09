@@ -18,6 +18,8 @@ captcha = captcha_model()
 
 timeout=30
 
+forgot_hash = {"qNAWKojL9x10F7hP":"2"}
+
 def generate_random_string(length=16):
     characters = string.ascii_letters + string.digits
     random_string = ''.join(random.choice(characters) for _ in range(length))
@@ -172,10 +174,8 @@ class users_model():
         result = self.cur.fetchall()
         if(len(result)>0):
             if bcrypt.checkpw(data['password'].encode('utf-8'), result[0]["password"].encode('utf-8')):
-                print("Hurra!! Password matched")
                 if data['newPassword'] == data['confirmPassword']:
-                    print("Hurra!! They are the same")
-                    sql = f"UPDATE users SET password='{self.encrypt(data['newPassword'])}'"
+                    sql = f"UPDATE users SET password='{self.encrypt(data['newPassword'])}' WHERE id='{id_input}"
                     self.cur.execute(sql)
                     return make_response({"result":"Passwords changed successfully"})
                 else:
@@ -185,29 +185,35 @@ class users_model():
         else:
             return make_response({"result":"User not found"},201)
         
-    def forgotPassword_model(self, data, id_input, token):
+    def forgotPassword_model(self, data):
         self.con.reconnect()
-        id = checkToken(token)
-        if isinstance(id, Response):
-            return id
-        if not (int(id_input)==int(id)):
-            return make_response({"result":"Unauthorized access"}, 401)
-        # confirm_hash = generate_random_string()
-        # subject = "Welcome to Faisalitab AI"
-        # with open("./Utils/activation.html", "r") as file:
-        #     message = file.read()
-        # soup = BeautifulSoup(message,"html.parser")
-        # a_tag = soup.find('a')
-        # a_tag["href"]="https://faisaliteb.ai/confirm-mail/"+confirm_hash
-        # send_email(data["email"], subject, str(soup))
-    
-    def resetPassword_model(self, data, id_input, token):
+        try:
+            hash = generate_random_string()
+            subject = "Faisalitab AI: Forgot Password"
+            with open("./Utils/forgot.html", "r") as file:
+                message = file.read()
+            soup = BeautifulSoup(message,"html.parser")
+            a_tag = soup.find('a')
+            a_tag["href"]="https://faisaliteb.ai/reset-password/"+hash
+            self.cur.execute("SELECT id FROM users where email=%s",[data['email']])
+            result = self.cur.fetchall()
+            if len(result)>0:
+                send_email(data['email'], subject, str(soup))
+                forgot_hash[hash] = result[0]['id']
+                return make_response({"result":"Verification link sent to mail"},201)
+            else:
+                return make_response({"result":"User not found"},201)
+        except Exception as e:
+            return make_response({"result":"Error occured: "+str(e)},201)
+
+    def resetPassword_model(self, data):
         self.con.reconnect()
-        id = checkToken(token)
-        if isinstance(id, Response):
-            return id
-        if not (int(id_input)==int(id)):
-            return make_response({"result":"Unauthorized access"}, 401)
+        if data['newPassword'] == data['confirmPassword']:
+            sql = f"UPDATE users SET password='{self.encrypt(data['newPassword'])}' WHERE id='{forgot_hash[data['hash']]}'"
+            self.cur.execute(sql)
+            return make_response({"result":"Passwords changed successfully"})
+        else:
+            return make_response({"result":"Passwords didn't match"},201)
     
     def get_image(self,path):
         with open(path, 'r') as file:

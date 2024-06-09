@@ -32,3 +32,23 @@ def payment():
 @price.route("/approve", methods=["POST"])
 def approve():
     return model.approve_model(request.get_json())
+
+@price.route("/offer", methods=["GET"])
+def getOffers():
+    return model.get_offers()
+
+@price.route("/offer", methods=["POST"])
+def addOffer():
+    return model.add_offer(request.get_json())
+
+@price.route("/coupon/all", methods=["GET"])
+def getCoupons():
+    return model.get_coupons()
+
+@price.route("/coupon", methods=["PUT"])
+def getCouponPrice():
+    return model.get_coupon_price(request.get_json())
+
+@price.route("/coupon", methods=["POST"])
+def addcoupon():
+    return model.add_coupon(request.get_json())

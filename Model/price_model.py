@@ -84,4 +84,49 @@ class price_model:
             return make_response({"result": data}, 201)
         except mysql.connector.Error as err:
             print("Error:", err)
-            return make_response({"result": "Unable to Update"}, 204)
+            return make_response({"result": "Unable to Update"}, 204)        
+
+    def get_offers(self):
+        self.con.reconnect()
+        self.cur.execute(f"SELECT * FROM offer")
+        result = self.cur.fetchall()
+        return make_response({"offers":result})
+
+    def add_offer(self, data):
+        self.con.reconnect()
+        query = f"INSERT INTO offer (offers) VALUES ('{data['offer']}')"
+        try:
+            self.cur.execute(query)
+            self.con.commit()
+            return make_response({"result": data})
+        except Exception as err:
+            return make_response({"result": "Error: "+str(err)}, 400)
+    
+    def get_coupons(self):
+        self.con.reconnect()
+        self.cur.execute(f"SELECT * FROM coupon")
+        result = self.cur.fetchall()
+        return make_response({"coupons":result})
+
+    def get_coupon_price(self, data):
+        self.cur.execute(f"SELECT * FROM coupon where code='{data['hash']}'")
+        result = self.cur.fetchall()
+        if len(result)>0:
+            discount = result[0]["discount"]
+        res={"discountDecimal":int(discount)/100}
+        if 'package' in data:
+            self.cur.execute(f"SELECT desc1 FROM price where id='{data['package']}'")
+            result = self.cur.fetchall()
+            if len(result)>0:
+                res['price']=(int(result[0]['desc1'].split(" ")[0]))*(1-int(discount)/100)
+        return make_response(res)
+
+    def add_coupon(self, data):
+        self.con.reconnect()
+        query = f"INSERT INTO coupon (code, discount) VALUES ('{data['code']}','{data['discount']}')"
+        try:
+            self.cur.execute(query)
+            self.con.commit()
+            return make_response({"result": data})
+        except Exception as err:
+            return make_response({"result": "Error: "+str(err)}, 400)

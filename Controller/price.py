@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, make_response
 from Model.price_model import price_model
 
 model = price_model()
@@ -29,9 +29,16 @@ def get_payment():
 def payment():
     return model.payment_model(request.get_json())
 
-@price.route("/approve", methods=["POST"])
+@price.route("/approve", methods=["PUT"])
 def approve():
     return model.approve_model(request.get_json())
+
+@price.route("/approve_payment/<tx>/<password>")
+def approve_tx(tx, password):
+    if password == "abc123def":
+        return model.approve_model({"transaction_id":tx})
+    else:
+        return make_response({},401)
 
 @price.route("/offer", methods=["GET"])
 def getOffers():

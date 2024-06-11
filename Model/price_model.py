@@ -65,26 +65,32 @@ class price_model:
         
     def payment_model(self,data):
         self.con.reconnect()
-        query = f"INSERT INTO payment(package_id,user_id,transaction_id,transaction_method) VALUES ('{data['package_id']}','{data['user_id']}','{data['transaction_id']}','{data['transaction_method']}')"
+        query = f"INSERT INTO payment(package_id,user_id,transaction_id,transaction_method,coupon) VALUES ('{data['package_id']}','{data['user_id']}','{data['transaction_id']}','{data['transaction_method']}',"
+        if "coupon" in data:
+            query+=f"'{data['coupon']}')"
+        else:
+            query+=f"'')"
         try:
-            # Execute the query using the values from `data`
             self.cur.execute(query)
-            self.con.commit()  # Make sure to commit the changes
+            self.con.commit()
             return make_response({"result": data}, 201)
         except mysql.connector.Error as err:
-            print("Error:", err)
-            return make_response({"result": "Unable to Add"}, 204)
+            return make_response({"result": "Error occured: "+str(err)}, 400)
     
     def approve_model(self,data):
         self.con.reconnect()
-        sql_query = f"UPDATE payment SET approved=1 WHERE id = {data['id']}"
+        sql_query = f"UPDATE payment SET approved=1 WHERE "
+        if "id" in data:
+            sql_query+=f"id = {data['id']}"
+        elif "transaction_id":
+            sql_query+=f"transaction_id = {data['transaction_id']}"
         try:
             self.cur.execute(sql_query)
             self.con.commit()
             return make_response({"result": data}, 201)
         except mysql.connector.Error as err:
             print("Error:", err)
-            return make_response({"result": "Unable to Update"}, 204)        
+            return make_response({"result": "Error occured: "+str(err)}, 400)        
 
     def get_offers(self):
         self.con.reconnect()

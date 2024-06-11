@@ -177,7 +177,7 @@ class users_model():
         if(len(result)>0):
             if bcrypt.checkpw(data['password'].encode('utf-8'), result[0]["password"].encode('utf-8')):
                 if data['newPassword'] == data['confirmPassword']:
-                    sql = f"UPDATE users SET password='{self.encrypt(data['newPassword'])}' WHERE id='{id_input}"
+                    sql = f"UPDATE users SET password='{self.encrypt(data['newPassword'])}' WHERE id='{id_input}'"
                     self.cur.execute(sql)
                     return make_response({"result":"Passwords changed successfully"})
                 else:

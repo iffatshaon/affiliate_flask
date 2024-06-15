@@ -76,13 +76,13 @@ class sites_model:
             print("Error:", err)
             return make_response({"result": "Unable to Add", "error":err}, 400)
     
-    def publish_model(self, data, token):
+    def publish_model(self, site_id, data, token):
         self.con.reconnect()
         id = checkToken(token)
         if isinstance(id, Response):
             return id
         
-        query = f"SELECT * FROM sites where id={data['site_id']}"
+        query = f"SELECT * FROM sites where id={site_id}"
         self.cur.execute(query)
         result = self.cur.fetchall()
         
@@ -114,18 +114,23 @@ class sites_model:
         except Exception as err:
             return make_response({"result":"Unable to publish", "error":str(err)},400)
     
-    def get_category(self, data, token):
+    def get_category(self, site_id, data, token):
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        wordpress_url = data['site']
-        wordpress_username = data['username']
+        
+        query = f"SELECT * FROM sites where id={site_id}"
+        self.cur.execute(query)
+        result = self.cur.fetchall()
+        
+        wordpress_url = result[0]['site']
+        wordpress_username = result[0]['username']
         wordpress_password = data['password']
 
         client = Client(wordpress_url, wordpress_username, wordpress_password)
         categories = client.call(GetTerms('category'))
         for cat in categories:
             print(cat.id)
-        category_names = {category.id:category.name for category in categories}
+        category_names = [{"id":category.id,"name":category.name} for category in categories]
 
         return make_response({"categories":category_names},200)

@@ -26,10 +26,10 @@ def add():
 def delete(id):
     return model.delete_model(id,request.headers.get('Authorization'))
 
-@sites.route("/publish", methods=["POST"])
-def publish():
-    return model.publish_model(request.get_json(),request.headers.get('Authorization'))
+@sites.route("/<site_id>/publish", methods=["POST"])
+def publish(site_id):
+    return model.publish_model(site_id, request.get_json(),request.headers.get('Authorization'))
 
-@sites.route("/category", methods=["POST"])
-def get_category():
-    return model.get_category(request.get_json(), request.headers.get('Authorization'))
+@sites.route("/<site_id>/categories", methods=["POST"])
+def get_category(site_id):
+    return model.get_category(site_id, request.get_json(), request.headers.get('Authorization'))

@@ -1,6 +1,5 @@
 from Utils.database import cursor, connection
 from flask import make_response, Response
-import asyncio
 from sydney import SydneyClient
 import os
 from openai import OpenAI
@@ -9,16 +8,12 @@ import requests
 import urllib.parse
 from datetime import datetime
 import markdown
-import jwt
 from googlesearch import search
 from Utils.helpers import checkToken
 from unidecode import unidecode
 import re
 from Utils.prompt import ArticleGenerator
 import mysql.connector
-
-api_key = 'AIzaSyCPHUGkoMq-Z7qO3nUDTDBrz1erVmSPm3M'
-cse_id = '124161338f8724c47'
 
 word_count={
         "info article":1800, 
@@ -32,7 +27,8 @@ word_count={
         "generated conclusion":1000,
         "generated introduction":1000,
         "blog article outline":1000,
-        "blog single paragraph":1000
+        "blog single paragraph":1000,
+        "bulk article":1800
         }
 
 def incLine(key,value):
@@ -81,40 +77,6 @@ class articles_model:
     def generate_cookie():
         return "cookie text"
 
-    def getImagePixabay(self,imageInfo):
-        api_url = f"https://pixabay.com/api/?key={os.getenv('PIXABAY_KEY')}&q={urllib.parse.quote_plus(imageInfo)}&image_type=photo&safesearch=true&per_page=4"
-        response = requests.get(api_url)
-        # print(response.json()["hits"][0]["largeImageURL"])
-        return response.json()["hits"][0]["largeImageURL"]
-
-    def getImagePexels(self,imageInfo):
-        url = "https://api.pexels.com/v1/search"
-        headers = {
-            "Authorization": os.getenv('PEXELS_KEY')
-        }
-        params = {
-            "query": imageInfo,
-            "per_page": 4
-        }
-        response = requests.get(url, headers=headers, params=params)
-        return response.json()["photos"][0]["src"]["original"]
-    
-    def getImageGoogle(search_term, num=10):
-        url = "https://www.googleapis.com/customsearch/v1"
-        params = {
-            "q": search_term,
-            "cx": cse_id,
-            "key": api_key,
-            "searchType": "image",
-            "num": num,
-            "fileType": "jpg|png",
-            "rights": "cc_publicdomain|cc_attribute|cc_sharealike|cc_noncommercial|cc_nonderived"
-        }
-        response = requests.get(url, params=params)
-        result = response.json()
-        images = [item['link'] for item in result.get('items', [])]
-        return images[0]
-
     def markdown_to_html(self, markdown_text):
         # Convert Markdown text to HTML
         html_content = markdown.markdown(markdown_text)
@@ -129,137 +91,17 @@ class articles_model:
         
         return str(soup)
 
-    # def create_model(self, data, token):
-        # self.con.reconnect()
-        # id = checkToken(token)
-        # if isinstance(id, Response):
-        #     return id
-        # if (data['type'] not in word_count):
-        #     return make_response({"result": "Category not found"}, 400)
-        # message = f"Write me a {data['type']} with more than {word_count[data['type']]} words"+f"using the keywords - {data['keywords']}. Use the keywords minimum 4 times in the texts and bold them." if 'keywords' in data else ""+" Headings must start from heading level 1 (Title must be Heading 1)."
-        # for x in data:
-        #     message+=incLine(x,data[x])
-        # message+="Don't give me any examples. Better to keep a video or image after title. Should be plagiarism free, each time generating new. Every paragraph should have a minimum of 5 sentences. Don't use any special character or emoji."
-        # # print(message)
-        
-        # messages = [ {"role": "system", "content":
-        #       "You are a web developer"} ]
-        # messages.append(
-        #     {"role": "user", "content": message},
-        # ) 
-        # chat = self.client.chat.completions.create(
-        #     model="gpt-3.5-turbo",
-        #     messages=messages
-        # )
-        # reply_md = chat.choices[0].message.content
-        # reply = self.markdown_to_html(reply_md)
-        
-        # soup = BeautifulSoup(reply, features="html.parser")
-        # # print(soup)
-        # try:
-        #     soup.body.append(soup.head.style)
-        # except:
-        #     pass
-        # token_count = len(reply_md.split())
-        # ### Remove token counts from total tokens bought out here ###
-        # self.cur.execute("SELECT * from users where id=%s",[id])
-        # result = self.cur.fetchall()
-        # id_user = ""
-        # token_user = ""
-        # if(len(result)>0):
-        #     id_user = result[0]["id"]
-        #     token_user = result[0]["token"]
-        # self.cur.execute("UPDATE users SET token=%s WHERE id=%s",(int(token_user)-token_count,id_user))
-        # ### Remove token counts from total tokens bought out here ###
-        # img_tags = soup.find_all('img')
-        # for img in img_tags:
-        #     alt_value = img.get('alt', '')
-        #     try:
-        #         resultImage = self.getImagePexels(alt_value) 
-        #         img['src'] = resultImage
-        #     except:
-        #         try:
-        #             resultImage = self.getImagePixabay(alt_value)
-        #         except:
-        #             print("Could not find image for:",alt_value)
-        # title = str(soup.find("h1").text)
-        # file_name = datetime.now().strftime("%y%m%d%H%M%S")
-        # file_path = 'articles/'+file_name+'.txt'
-        # body_content=str(soup)+"""
-        # <style>
-        # h1, h2, h3{
-        # text-align:center;
-        # }
-        # img{
-        # width:100%;
-        # }
-        # </style>
-        # """
-        # body_content = unidecode(body_content)
-        # with open(file_path, 'w') as file:
-        #     file.write(body_content)
-        # self.cur.execute("INSERT INTO article (id, user, title, link, token_count, prompt) VALUES (%s, %s, %s, %s, %s, %s)",(file_name, id, title, file_path, token_count, str(data)))
-        # return make_response({"article_id":file_name}, 201) #send_file("text_file_path",mimetype="txt")
-    
     def create_model(self,data,token):
         self.con.reconnect()
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        article_gen = ArticleGenerator(data,word_count[data['type']])
-        if(data['type']=="info article" or data['type']=="blog article" or data['type']=="human touch content"):
-            title,reply = article_gen.generate_info_article()
-        elif(data['type']=="manual sub-heading artilce"):
-            title,reply = article_gen.generate_manual_subheading()
-        elif(data['type']=="generated introduction"):
-            title,reply = article_gen.generate_introduction()
-        elif(data['type']=="generated conclusion"):
-            title,reply = article_gen.generate_conclusion()
-        elif(data['type']=="product category"):
-            title,reply = article_gen.generate_product_content()
-        elif(data['type']=="blog article outline"):
-            title,reply = article_gen.generate_blog_outline()
-        elif(data['type']=="blog single paragraph"):
-            title,reply = article_gen.generate_blog_paragraph()
-        elif(data['type']=="content rewrite"):
-            title,reply = article_gen.generate_rewrite_content()
+        article_gen = ArticleGenerator(data,word_count[data['type']],id)
+        file_name=article_gen.get_file_name()
         del article_gen
-        file_name = datetime.now().strftime("%y%m%d%H%M%S")
-        file_path = 'articles/'+file_name+'.txt'
-        soup = BeautifulSoup(reply, features="html.parser")
-        img_tags = soup.find_all('img')
-        for img in img_tags:
-            alt_value = img.get('alt', '').split(':')[-1]
-            try:
-                resultImage = self.getImageGoogle(alt_value)
-                img['src'] = resultImage
-            except:
-                try:
-                    resultImage = self.getImagePexels(alt_value)
-                    img['src'] = resultImage
-                except:
-                    try:
-                        resultImage = self.getImagePixabay(alt_value)
-                    except:
-                        print("Could not find image for:",alt_value)
-        body_content=str(soup)+"""
-        <style>
-        h1{
-        text-align:center;
-        }
-        img{
-        width:100%;
-        }
-        </style>
-        """
-        body_content = unidecode(body_content)
-        body_content = body_content.replace("\n", "")
-        with open(file_path, 'w') as file:
-            file.write(body_content)
-        self.cur.execute("INSERT INTO article (id, user, title, link, token_count, prompt) VALUES (%s, %s, %s, %s, %s, %s)",(file_name, id, title, file_path, 0, str(data)))
         # except Exception as e:
         #     return make_response({"Error":str(e)},400)
-        return make_response({"article_id":file_name}, 201)
+        return make_response({"article":file_name}, 201)
 
     def free_model(self,data):
         article_gen = ArticleGenerator(data,word_count[data['type']])

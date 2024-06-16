@@ -16,7 +16,7 @@ from Utils.helpers import checkAdmin,checkToken, entries
 
 captcha = captcha_model()
 
-timeout=30
+timeout=1440
 
 forgot_hash = {"qNAWKojL9x10F7hP":"2"}
 

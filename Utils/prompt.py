@@ -4,6 +4,11 @@ import re
 import markdown
 import concurrent.futures
 from bs4 import BeautifulSoup
+from unidecode import unidecode
+from datetime import datetime
+from Utils.database import cursor, connection
+import requests
+import urllib.parse
 
 class OpenAIChat:
     def __init__(self):
@@ -17,13 +22,39 @@ class OpenAIChat:
         return response
 
 class ArticleGenerator:
-    def __init__(self, data, totalWord):
+    def __init__(self, data, totalWord, id):
+        self.con = connection
+        self.cur = cursor
         self.chat = OpenAIChat()
         self.data = data
+        self.id=id
         self.totalWord = totalWord
         self.image_in_single_content = 0
         self.word_in_single_content = 0
         self.images = ["Example"]
+        self.realData = data.copy()
+        self.file_name = ""
+        if(data['type']=="info article" or data['type']=="blog article" or data['type']=="human touch content"):
+            self.generate_info_article()
+        elif(data['type']=="manual sub-heading artilce"):
+            self.generate_manual_subheading()
+        elif(data['type']=="bulk article"):
+            self.generate_bulk_article()
+        elif(data['type']=="generated introduction"):
+            self.generate_introduction()
+        elif(data['type']=="generated conclusion"):
+            self.generate_conclusion()
+        elif(data['type']=="product category"):
+            self.generate_product_content()
+        elif(data['type']=="blog article outline"):
+            self.generate_blog_outline()
+        elif(data['type']=="blog single paragraph"):
+            self.generate_blog_paragraph()
+        elif(data['type']=="content rewrite"):
+            self.generate_rewrite_content()
+    
+    def get_file_name(self):
+        return self.file_name
 
     def get_title(self):
         message = f"Give me a title of an article based on keywords-'{self.data['keywords']}'. The title must contain the keyword. Give me only the answer."
@@ -47,11 +78,10 @@ class ArticleGenerator:
         message = f"Write a part of a complete article in {self.word_in_single_content} words about {self.data['subHeadings']}, don't add any headings in your answer. Don't add any introduction or conclusion in this, only answer about the topic in two or three paragraphs only. For information the title of the article is {self.data['title']}, don't include the title in your answer. The content must have keywords- '{self.data['keywords']}' once."
         if imaged:
             # message += f"Add minimum {self.image_in_single_content} image labels in a markdown image format. In the markdown image the appropriate labels should be related to the contents. The labels must point to the specific image and should be kept as alt. The labels should not contain similar to the following: {','.join(self.images)}"
-            message += f"Add minimum {self.image_in_single_content} figure captions in a markdown image format for image search. The captions must point to the specific image related to the content and should be kept as alt. The captions should not contain similar to the following: {','.join(self.images)}"
+            message += f"Add minimum {self.image_in_single_content} figure captions in a markdown image format for image search. The captions must point to the specific image related to the content and should be kept as alt. For example, suppose there is a content on climate change, and the passage is on effect on climate change, so the image will generate '![Effects on climate change](#)'. The captions should not contain similar to the following: {','.join(self.images)}"
             if self.image_in_single_content > 1:
                 message += "All images should be different."
         content = self.chat.get_response(self.data['type'], message)
-        # print("Content: ",content)
         content_html = self.markdown_to_html(content)
         soup = BeautifulSoup(content_html, features="html.parser")
         img_tags = soup.find_all('img')
@@ -114,17 +144,18 @@ class ArticleGenerator:
         return contents
 
     def generate_info_article(self):
+        print("data we got: ",self.data['title'], self.data['keywords'])
         if not self.data["title"]:
             self.data['title'] = self.get_title()
         self.data['subHeadings'] = self.get_headings()
-
         self.image_in_single_content = int(self.data['numImage']) / len(self.data['subHeadings'])
         self.word_in_single_content = "more than "+str(self.totalWord / len(self.data['subHeadings']))
         self.data['contents'] = self.process_with_threads(True)
         
         self.check_missing_headings()
         html = self.create_html_document()
-        return self.data['title'], html
+        body_content = self.get_image(html)
+        self.create_file(self.data['title'], body_content) 
 
     def generate_manual_subheading(self):
         self.image_in_single_content = int(self.data['numImage']) / len(self.data['subHeadings'])
@@ -132,19 +163,22 @@ class ArticleGenerator:
         self.data['contents'] = self.process_with_threads(True)    
         self.check_missing_headings()
         html = self.create_html_document()
-        return self.data['title'], html
+        body_content = self.get_image(html)
+        self.create_file(self.data['title'], body_content) 
 
     def generate_introduction(self):
         content = self.get_intro()
         words = content.split()
         title = ' '.join(words[:6])
-        return title,content
+        body_content = self.get_image(content)
+        self.create_file(title, body_content) 
 
     def generate_conclusion(self):
         content = self.get_conclusion()
         words = content.split()
         title = ' '.join(words[:6])
-        return title,content
+        body_content = self.get_image(content)
+        self.create_file(title, body_content) 
     
     def generate_product_content(self):
         if not self.data["title"]:
@@ -155,25 +189,114 @@ class ArticleGenerator:
         self.data['contents'] = self.process_with_threads(True)
         
         html = self.create_html_document()
-        return self.data['title'], html
+        body_content = self.get_image(html)
+        self.create_file(self.data['title'], body_content) 
     
     def generate_rewrite_content(self):
         message = f"Rewrite this within {self.totalWord} to {int(self.totalWord)+200} words about this content: {self.data['fullContent']}. The content must contain {self.data['numImage']} image labels written in markdown image format inside of the content. SHould add {self.data['numFaq']} at the end. Give me only the answer."
         content = self.chat.get_response(self.data['type'], message)
         title="Rewrite content"
-        return title,content
+        body_content = self.get_image(content)
+        self.create_file(title, body_content) 
     
     def generate_blog_outline(self):
         message = f"Generate a blog outline from this short description: {self.data['shortDescription']} in {self.data['toine']}. The outline must contain these keywords atleast 3 times: {self.data['keywords']}. Give me only the answer."
         content = self.chat.get_response(self.data['type'], message)
         title="Blog outline"
-        return title,content
+        body_content = self.get_image(content)
+        self.create_file(title, body_content) 
     
     def generate_blog_paragraph(self):
         message = f"Generate a blog single paragraph from this short description: {self.data['shortDescription']} in {self.data['toine']}. The outline must contain these keywords atleast 3 times: {self.data['keywords']}. Give me only the answer."
         content = self.chat.get_response(self.data['type'], message)
         title="Blog single paragraph"
-        return title,content
+        body_content = self.get_image(content)
+        self.create_file(title, body_content) 
+    
+    def generate_bulk_article(self):
+        allKeywords = self.data['keywords']
+        output = []
+        for keyword in allKeywords.split('\n'):
+            self.data['keywords'] = keyword
+            self.generate_info_article()
+            singleResult={"title":self.data['title'],"article_id":self.file_name}
+            self.data['title']=""
+            output.append(singleResult)
+        self.file_name = output
+    
+    def getImagePixabay(self,imageInfo):
+        api_url = f"https://pixabay.com/api/?key={os.getenv('PIXABAY_KEY')}&q={urllib.parse.quote_plus(imageInfo)}&image_type=photo&safesearch=true&per_page=4"
+        response = requests.get(api_url)
+        # print(response.json()["hits"][0]["largeImageURL"])
+        return response.json()["hits"][0]["largeImageURL"]
+
+    def getImagePexels(self,imageInfo):
+        url = "https://api.pexels.com/v1/search"
+        headers = {
+            "Authorization": os.getenv('PEXELS_KEY')
+        }
+        params = {
+            "query": imageInfo,
+            "per_page": 4
+        }
+        response = requests.get(url, headers=headers, params=params)
+        return response.json()["photos"][0]["src"]["original"]
+    
+    def getImageGoogle(self, search_term, num=10):
+        print(str(search_term))
+        url = "https://www.googleapis.com/customsearch/v1"
+        params = {
+            "q": search_term,
+            "cx": '124161338f8724c47',#os.getenv('GOOGLE_CSE_ID'),
+            "key": 'AIzaSyCPHUGkoMq-Z7qO3nUDTDBrz1erVmSPm3M',#os.getenv('GOOGLE_API_KEY'),
+            "searchType": "image",
+            "num": num,
+            "fileType": "jpg|png",
+            "rights": "cc_publicdomain|cc_attribute|cc_sharealike|cc_noncommercial|cc_nonderived"
+        }
+        response = requests.get(url, params=params)
+        result = response.json()
+        images = [item['link'] for item in result.get('items', [])]
+        return images[0]
+
+    def get_image(self,reply):
+        soup = BeautifulSoup(reply, features="html.parser")
+        img_tags = soup.find_all('img')
+        for img in img_tags:
+            alt_value = img.get('alt', '').split(':')[-1]
+            try:
+                resultImage = self.getImageGoogle(str(alt_value))
+                img['src'] = resultImage
+            except Exception as e:
+                try:
+                    resultImage = self.getImagePexels(alt_value)
+                    img['src'] = resultImage
+                except:
+                    try:
+                        resultImage = self.getImagePixabay(alt_value)
+                    except:
+                        print("Could not find image for:",alt_value)
+        body_content=str(soup)+"""
+        <style>
+        h1{
+        text-align:center;
+        }
+        img{
+        width:100%;
+        }
+        </style>
+        """
+        body_content = unidecode(body_content)
+        body_content = body_content.replace("\n", "")
+        return body_content
+    
+    def create_file(self, title, content):
+        self.file_name = datetime.now().strftime("%y%m%d%H%M%S")
+        file_path = 'articles/'+self.file_name+'.txt'
+        with open(file_path, 'w') as file:
+            file.write(content)
+        self.cur.execute("INSERT INTO article (id, user, title, link, token_count, prompt) VALUES (%s, %s, %s, %s, %s, %s)",(self.file_name, self.id, title, file_path, 0, str(self.realData)))
+        
 
 # Sample usage:
 roles = {
@@ -187,6 +310,6 @@ roles = {
     "generated conclusion":"You are a article writer",
     "generated introduction":"You are a article writer",
     "blog article outline":"You are a blog writer",
-    "blog single paragraph":"You are a blog writer"
-
+    "blog single paragraph":"You are a blog writer",
+    "bulk article":"You are a article writer"
     }

@@ -87,6 +87,10 @@ class sites_model:
         result = self.cur.fetchall()
         
         wordpress_url = result[0]['site']
+        if "xmlrpc.php" not in wordpress_url:
+            if wordpress_url[-1] != "/":
+                wordpress_url = wordpress_url+"/"
+            wordpress_url += "xmlrpc.php"
         wordpress_username = result[0]['username']
         wordpress_password = data['password']
 

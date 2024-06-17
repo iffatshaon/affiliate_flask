@@ -209,16 +209,10 @@ class articles_model:
         id = checkToken(token)
         if isinstance(id, Response):
             return id
-        suggestion_sites = []
-        query = ' '.join(data['keywords']) + " suggestions"
-        for url in search(query, num=5, stop=3, pause=2):
-            try:
-                page = requests.get(url)
-                soup = BeautifulSoup(page.content, 'html.parser')
-                title = soup.title.string
-                suggestion_sites.append((title, url))
-            except Exception as e:
-                print(f"Error fetching data from {url}: {e}")
+        data['type'] = 'suggestion'
+        sugg = ArticleGenerator(data,0,id)
+        suggestion_sites = sugg.suggestion()
+        del sugg
         return make_response({"suggestions":suggestion_sites})
     
     def keyword_model(self, data):

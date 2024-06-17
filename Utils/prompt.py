@@ -55,6 +55,16 @@ class ArticleGenerator:
     
     def get_file_name(self):
         return self.file_name
+    
+    def suggestion(self):
+        message = f"Give me 5 unique titles from these keywords: {self.data['keywords']}. Give me only the answer in numbered list. Example: [1] Title 1, [2] Title 2"
+        titles = self.chat.get_response("info article", message)
+        cleaned_list = []
+        for item in titles.split('\n'):
+            # print(item)
+            cleaned_title = item.split('] ', 1)[-1].replace('"','').strip()
+            cleaned_list.append(cleaned_title)
+        return cleaned_list
 
     def get_title(self):
         message = f"Give me a title of an article based on keywords-'{self.data['keywords']}'. The title must contain the keyword. Give me only the answer."

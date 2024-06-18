@@ -154,7 +154,6 @@ class ArticleGenerator:
         return contents
 
     def generate_info_article(self):
-        print("data we got: ",self.data['title'], self.data['keywords'])
         if not self.data["title"]:
             self.data['title'] = self.get_title()
         self.data['subHeadings'] = self.get_headings()
@@ -253,7 +252,6 @@ class ArticleGenerator:
         return response.json()["photos"][0]["src"]["original"]
     
     def getImageGoogle(self, search_term, num=10):
-        print(str(search_term))
         url = "https://www.googleapis.com/customsearch/v1"
         params = {
             "q": search_term,
@@ -279,6 +277,7 @@ class ArticleGenerator:
                 img['src'] = resultImage
             except Exception as e:
                 try:
+                    print("Couldnt find image in google: ",alt_value)
                     resultImage = self.getImagePexels(alt_value)
                     img['src'] = resultImage
                 except:

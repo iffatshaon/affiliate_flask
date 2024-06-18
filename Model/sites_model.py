@@ -137,8 +137,6 @@ class sites_model:
 
         client = Client(wordpress_url, wordpress_username, wordpress_password)
         categories = client.call(GetTerms('category'))
-        for cat in categories:
-            print(cat.id)
         category_names = [{"id":category.id,"name":category.name} for category in categories]
 
         return make_response({"categories":category_names},200)

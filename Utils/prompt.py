@@ -34,8 +34,10 @@ class ArticleGenerator:
         self.images = ["Example"]
         self.realData = data.copy()
         self.file_name = ""
-        if(data['type']=="info article" or data['type']=="blog article" or data['type']=="human touch content"):
+        if(data['type']=="info article" or data['type']=="blog article"):
             self.generate_info_article()
+        elif(data['type']=="human touch content"):
+            self.generate_human_touch()
         elif(data['type']=="manual sub-heading artilce"):
             self.generate_manual_subheading()
         elif(data['type']=="bulk article"):
@@ -104,10 +106,20 @@ class ArticleGenerator:
         conclusion = self.chat.get_response(self.data['type'], message)
         return conclusion
 
+    def get_faq_answers(self,faq_question):
+        content = ""
+        for ques in faq_question:
+            message = f"Write the answer to this faq question: '{ques}'. Write only the answer."
+            answer = self.chat.get_response(self.data['type'], message)
+            content += f"**{ques}**\n\n{answer}\n\n"
+        return content
+
     def get_faq(self):
-        message = f"Write a minimum of {self.data['numFaq']} FAQs of an article with answer whose title is {self.data['title']}. The questions should be bold and answer in normal text in the next line. Don't include any heading (FAQ...) in your answer."
+        message = f"Write a minimum of {self.data['numFaq']} FAQs of an article whose title is {self.data['title']}. The questions should be in ordered list. Answer only the ordered list."
         faq = self.chat.get_response(self.data['type'], message)
-        return faq
+        questions = [line.split('. ', 1)[1] for line in faq.split('\n')]
+        faq_content = self.get_faq_answers(questions)
+        return faq_content
     
     def get_intro(self):
         message = f"Write only the introduction for this section within {self.totalWord} to {int(self.totalWord)+200} words about this content: {self.data['fullContent']}. Give me only the answer."
@@ -164,7 +176,7 @@ class ArticleGenerator:
         self.check_missing_headings()
         html = self.create_html_document()
         body_content = self.get_image(html)
-        self.create_file(self.data['title'], body_content) 
+        self.create_file(self.data['title'], body_content)
 
     def generate_manual_subheading(self):
         self.image_in_single_content = int(self.data['numImage']) / len(self.data['subHeadings'])
@@ -232,6 +244,32 @@ class ArticleGenerator:
             self.data['title']=""
             output.append(singleResult)
         self.file_name = output
+
+    def generate_human_touch(self):
+        self.image_in_single_content = int(self.data['numImage']) / len(self.data['subHeadings'])
+        self.word_in_single_content = "more than "+str(self.totalWord / len(self.data['subHeadings']))
+        has_conclusion=False
+        self.data['subHeadings'] = self.data['subHeadings'].split("\n")
+        self.data['faqs'] = self.data['faqs'].split("\n")
+        for heading in self.data['subHeadings']:
+            if "FAQ" in heading or "Frequently Asked Question" in heading or "faq" in heading:
+                del self.data['subHeadings']['FAQ']
+                del self.data['subHeadings']['faq']
+                del self.data['subHeadings']['Frequently Asked Question']
+            elif "Conclusion" in heading or "conclusion" in heading:
+                has_conclusion = True
+        self.data['contents'] = self.process_with_threads(True)
+        
+        if not has_conclusion:
+            self.data['subHeadings'].append("Conclusion")
+            self.data['contents'].append(self.get_conclusion())
+        self.data['subHeadings'].append("FAQ")
+        self.data['contents'].append(self.get_faq_answers(self.data['faqs']))
+
+        html = self.create_html_document()
+        body_content = self.get_image(html)
+        print(body_content)
+        self.create_file(self.data['title'], body_content)
     
     def getImagePixabay(self,imageInfo):
         api_url = f"https://pixabay.com/api/?key={os.getenv('PIXABAY_KEY')}&q={urllib.parse.quote_plus(imageInfo)}&image_type=photo&safesearch=true&per_page=4"

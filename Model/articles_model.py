@@ -21,7 +21,7 @@ word_count={
         "manual subheading article":1800, 
         "product category":600, 
         "amazon review":1000,
-        "human touch content":1000,
+        "human touch content":1800,
         "info article":1000,
         "content rewrite":1000,
         "generated conclusion":1000,
@@ -101,12 +101,14 @@ class articles_model:
         del article_gen
         # except Exception as e:
         #     return make_response({"Error":str(e)},400)
-        return make_response({"article":file_name}, 201)
+        return make_response({"article_id":file_name}, 201)
 
     def free_model(self,data):
         article_gen = ArticleGenerator(data,word_count[data['type']])
-        if(data['type']=="info article" or data['type']=="blog article" or data['type']=="human touch content"):
+        if(data['type']=="info article" or data['type']=="blog article"):
             title,reply = article_gen.generate_info_article()
+        elif(data['type']=="human touch content"):
+            title,reply = article_gen.generate_human_touch()
         elif(data['type']=="manual sub-heading artilce"):
             title,reply = article_gen.generate_manual_subheading()
         elif(data['type']=="generated introduction"):

@@ -13,6 +13,7 @@ import datetime
 import jwt
 from PIL import Image
 from Utils.helpers import checkAdmin,checkToken, entries
+import re
 
 captcha = captcha_model()
 
@@ -63,32 +64,59 @@ class users_model():
         return str(hashed.decode('utf-8'))
         # return password
 
+    def validate_contact_info(self, email, mobile):
+        # Regular expression for validating an Email
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        mobile_regex = r'^(?:\+88)?01[3-9]\d{8}$'
+
+        is_email_valid = bool(re.match(email_regex, email))
+        is_mobile_valid = bool(re.match(mobile_regex, mobile))
+
+        return {
+            "email_valid": is_email_valid,
+            "mobile_valid": is_mobile_valid
+        }
+
     def register_model(self,data):
         self.con.reconnect()
         getMatch = captcha.match_model({"hash":data['hash'],"text":data['text']})
         # getMatch = {'result':True}
         if getMatch['result']:
-            password = self.encrypt(data['password'])
-            self.cur.execute(f"SELECT * FROM users where email='{data['email']}' OR mobile='{data['mobile']}'")
+            validation = self.validate_contact_info(data['email'],data['mobile'])
+            if not validation['email_valid']:
+                return make_response({"result":"Inavlid Email"},409)
+            if not validation['mobile_valid']:
+                return make_response({"result":"Inavlid Mobile number"},409)
+            self.cur.execute(f"SELECT * FROM users where email='{data['email']}'")
             res = self.cur.fetchall()
             confirm_hash = generate_random_string()
             if(len(res)>0):
-                return make_response({"result":"Email and/or Mobile number has already been used"},409)
-            else:
-                try:
-                    if 'profile' not in data:
-                        data['profile']='profiles/default.png'
-                    self.cur.execute(f"INSERT INTO users(name,mobile,username,email,password,confirm,image) VALUES('{data['name']}','{data['mobile']}','{data['username']}','{data['email']}','{password}','{confirm_hash}','{data['profile']}')")
-                    subject = "Welcome to Faisalitab AI"
-                    with open("./Utils/activation.html", "r") as file:
-                        message = file.read()
-                    soup = BeautifulSoup(message,"html.parser")
-                    a_tag = soup.find('a')
-                    a_tag["href"]="https://faisaliteb.ai/confirm-mail/"+confirm_hash
-                    send_email(data["email"], subject, str(soup))
-                    return make_response({"result":"Verification link sent to mail"},201)
-                except Exception as err:
-                    return make_response({"result":"Unable to Register","error":str(err)},400)
+                return make_response({"result":"Email already exists"},409)
+            self.cur.execute(f"SELECT * FROM users where mobile='{data['mobile']}'")
+            res = self.cur.fetchall()
+            confirm_hash = generate_random_string()
+            if(len(res)>0):
+                return make_response({"result":"Mobile number already exists"},409)
+            self.cur.execute(f"SELECT * FROM users where username='{data['username']}'")
+            res = self.cur.fetchall()
+            confirm_hash = generate_random_string()
+            if(len(res)>0):
+                return make_response({"result":"Username already exists"},409)
+            password = self.encrypt(data['password'])
+            try:
+                if 'profile' not in data:
+                    data['profile']='profiles/default.png'
+                self.cur.execute(f"INSERT INTO users(name,mobile,username,email,password,confirm,image) VALUES('{data['name']}','{data['mobile']}','{data['username']}','{data['email']}','{password}','{confirm_hash}','{data['profile']}')")
+                subject = "Welcome to Faisalitab AI"
+                with open("./Utils/activation.html", "r") as file:
+                    message = file.read()
+                soup = BeautifulSoup(message,"html.parser")
+                a_tag = soup.find('a')
+                a_tag["href"]="https://faisaliteb.ai/confirm-mail/"+confirm_hash
+                send_email(data["email"], subject, str(soup))
+                return make_response({"result":"Verification link sent to mail"},201)
+            except Exception as err:
+                return make_response({"result":"Unable to Register","error":str(err)},400)
         else:
             return make_response({"result":"Invalid captcha"},204)
     

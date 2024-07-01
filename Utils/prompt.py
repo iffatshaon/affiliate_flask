@@ -34,6 +34,7 @@ class ArticleGenerator:
         self.images = ["Example"]
         self.realData = data.copy()
         self.file_name = ""
+        self.images_link = []
         if(data['type']=="info article" or data['type']=="blog article"):
             self.generate_info_article()
         elif(data['type']=="human touch content"):
@@ -268,14 +269,16 @@ class ArticleGenerator:
 
         html = self.create_html_document()
         body_content = self.get_image(html)
-        print(body_content)
         self.create_file(self.data['title'], body_content)
     
     def getImagePixabay(self,imageInfo):
-        api_url = f"https://pixabay.com/api/?key={os.getenv('PIXABAY_KEY')}&q={urllib.parse.quote_plus(imageInfo)}&image_type=photo&safesearch=true&per_page=4"
+        api_url = f"https://pixabay.com/api/?key={os.getenv('PIXABAY_KEY')}&q={urllib.parse.quote_plus(imageInfo)}&image_type=photo&safesearch=true&per_page=10"
         response = requests.get(api_url)
         # print(response.json()["hits"][0]["largeImageURL"])
-        return response.json()["hits"][0]["largeImageURL"]
+        for x in range(10):
+            if x not in self.images_link:
+                self.images_link.append(response.json()["hits"][x]["largeImageURL"])
+                return response.json()["hits"][x]["largeImageURL"]
 
     def getImagePexels(self,imageInfo):
         url = "https://api.pexels.com/v1/search"
@@ -284,10 +287,13 @@ class ArticleGenerator:
         }
         params = {
             "query": imageInfo,
-            "per_page": 4
+            "per_page": 10
         }
         response = requests.get(url, headers=headers, params=params)
-        return response.json()["photos"][0]["src"]["original"]
+        for x in range(10):
+            if x not in self.images_link:
+                self.images_link.append(response.json()["photos"][x]["src"]["original"])
+                return response.json()["photos"][x]["src"]["original"]
     
     def getImageGoogle(self, search_term, num=10):
         url = "https://www.googleapis.com/customsearch/v1"
@@ -303,7 +309,10 @@ class ArticleGenerator:
         response = requests.get(url, params=params)
         result = response.json()
         images = [item['link'] for item in result.get('items', [])]
-        return images[0]
+        for x in range(10):
+            if x not in self.images_link:
+                self.images_link.append(images[x])
+                return images[x]
 
     def get_image(self,reply):
         soup = BeautifulSoup(reply, features="html.parser")

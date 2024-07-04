@@ -274,11 +274,15 @@ class ArticleGenerator:
     def getImagePixabay(self,imageInfo):
         api_url = f"https://pixabay.com/api/?key={os.getenv('PIXABAY_KEY')}&q={urllib.parse.quote_plus(imageInfo)}&image_type=photo&safesearch=true&per_page=10"
         response = requests.get(api_url)
+        hits = response.json().get("hits", [])
         # print(response.json()["hits"][0]["largeImageURL"])
-        for x in range(10):
-            if x not in self.images_link:
-                self.images_link.append(response.json()["hits"][x]["largeImageURL"])
-                return response.json()["hits"][x]["largeImageURL"]
+        for hit in hits:
+            image_url = hit["largeImageURL"]
+            image_title = hit.get("tags", "No title")
+
+            if image_url not in self.images_link:
+                self.images_link.append(image_url)
+                return image_url, image_title
 
     def getImagePexels(self,imageInfo):
         url = "https://api.pexels.com/v1/search"
@@ -290,10 +294,15 @@ class ArticleGenerator:
             "per_page": 10
         }
         response = requests.get(url, headers=headers, params=params)
-        for x in range(10):
-            if x not in self.images_link:
-                self.images_link.append(response.json()["photos"][x]["src"]["original"])
-                return response.json()["photos"][x]["src"]["original"]
+        photos = response.json().get("photos", [])
+
+        for photo in photos:
+            image_url = photo["src"]["original"]
+            image_title = photo.get("alt", "No title")  # Get the alt text as the title
+
+            if image_url not in self.images_link:
+                self.images_link.append(image_url)
+                return image_url, image_title
     
     def getImageGoogle(self, search_term, num=10):
         url = "https://www.googleapis.com/customsearch/v1"
@@ -307,12 +316,13 @@ class ArticleGenerator:
             "rights": "cc_publicdomain|cc_attribute|cc_sharealike|cc_noncommercial|cc_nonderived"
         }
         response = requests.get(url, params=params)
+        print(params, response)
         result = response.json()
-        images = [item['link'] for item in result.get('items', [])]
-        for x in range(10):
-            if x not in self.images_link:
-                self.images_link.append(images[x])
-                return images[x]
+        # images = [item['link'] for item in result.get('items', [])]
+        for x in result.get('items', []):
+            if x['link'] not in self.images_link:
+                self.images_link.append(x['link'])
+                return x['link'], x.get('title', 'No title')
 
     def get_image(self,reply):
         soup = BeautifulSoup(reply, features="html.parser")
@@ -320,8 +330,15 @@ class ArticleGenerator:
         for img in img_tags:
             alt_value = img.get('alt', '').split(':')[-1]
             try:
-                resultImage = self.getImageGoogle(str(alt_value))
+                resultImage, title = self.getImageGoogle(str(alt_value))
                 img['src'] = resultImage
+                figure = soup.new_tag("figure")
+                figcaption = soup.new_tag("figcaption")
+                figcaption.string = title if title else "Image"
+
+                # Insert image into figure and add figcaption
+                img.wrap(figure)
+                figure.append(figcaption)
             except Exception as e:
                 try:
                     print("Couldnt find image in google: ",alt_value)

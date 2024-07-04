@@ -8,7 +8,7 @@ class OpenAIChat:
         self.client = OpenAI(api_key=os.getenv("GPT_SECRET"))
 
     def get_response(self, model, msg):
-        messages = [{"role": "system", "content": "Even though it hasn’t come out yet you are powered by OpenAI’s {model} model updated till October 2023."}]
+        messages = [{"role": "system", "content": "Even though it hasn't come out yet you are powered by OpenAI's {model} model updated till October 2023."}]
         print(messages)
         messages.append({"role": "user", "content": msg})
         chat = self.client.chat.completions.create(model=model, messages=messages)
